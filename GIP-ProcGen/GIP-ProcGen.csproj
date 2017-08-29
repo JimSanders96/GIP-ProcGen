@@ -78,7 +78,26 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Layout Generation\VoronoiLayout.cs" />
+    <Compile Include="Assets\Layout Generation\PointGenerator.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\DelaunayHelpers.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\Edge.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\EdgeList.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\EdgeReorderer.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\Halfedge.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\HalfedgePriorityQueue.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\ICoord.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\LR.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\Site.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\SiteList.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\Triangle.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\Vertex.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\Delaunay\Voronoi.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\geom\Circle.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\geom\LineSegment.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\geom\Polygon.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\geom\Winding.cs" />
+    <Compile Include="Assets\Layout Generation\Unity-delaunay\utils\IDisposable.cs" />
+    <Compile Include="Assets\Layout Generation\VoronoiDemo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
