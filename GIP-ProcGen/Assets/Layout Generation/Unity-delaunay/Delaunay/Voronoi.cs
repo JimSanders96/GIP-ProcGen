@@ -27,7 +27,6 @@ namespace Delaunay
 		private Dictionary <Vector2,Site> _sitesIndexedByLocation;
 		private List<Triangle> _triangles;
 		private List<Edge> _edges;
-
 		
 		// TODO generalize this so it doesn't have to be a rectangle;
 		// then we can make the fractal voronois-within-voronois
@@ -86,13 +85,16 @@ namespace Delaunay
 		{
 			if (_sitesIndexedByLocation.ContainsKey (p))
 				return; // Prevent duplicate site! (Adapted from https://github.com/nodename/as3delaunay/issues/1)
-			float weight = UnityEngine.Random.value * 100f;
-			Site site = Site.Create (p, (uint)index, weight, color);
+            //float weight = random.NextFloat() * 100f;
+            float weight = UnityEngine.Random.Range(0.0f, 1.0f) * 100f;
+
+            Site site = Site.Create (p, (uint)index, weight, color);
 			_sites.Add (site);
 			_sitesIndexedByLocation [p] = site;
 		}
 
-		public List<Edge> Edges ()
+
+        public List<Edge> Edges ()
 		{
 			return _edges;
 		}
