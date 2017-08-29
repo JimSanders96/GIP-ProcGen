@@ -10,8 +10,6 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private string seed = "lelele";
     [SerializeField]
-    private int smoothingFactor = 1;
-    [SerializeField]
     private int pointCount = 150;
     [SerializeField]
     private int width = 1000;
@@ -21,6 +19,11 @@ public class LayoutGenerator : MonoBehaviour
     private System.Random random;
     [SerializeField]
     private bool drawVoronoi, drawDelaunay, drawSpanningTree;
+
+    [SerializeField]
+    private int roomCount = 1;
+    [SerializeField]
+    private int minRoomSize, maxRoomSize;
 
     private Voronoi voronoi;
 
