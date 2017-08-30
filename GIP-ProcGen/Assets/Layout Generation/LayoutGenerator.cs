@@ -18,7 +18,7 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private System.Random random;
     [SerializeField]
-    private bool drawVoronoi, drawDelaunay, drawSpanningTree;
+    private bool drawVoronoi, drawDelaunay, drawSpanningTree, drawRandomCell;
 
     [SerializeField]
     private int roomCount = 1;
@@ -59,56 +59,53 @@ public class LayoutGenerator : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        if (voronoi == null)
+            return;
+
         if (drawVoronoi)
             DrawVoronoi();
         if (drawDelaunay)
             DrawDelaunay();
         if (drawSpanningTree)
             DrawSpanningTree();
+        if (drawRandomCell)
+            DrawRandomVoronoiCell();
     }
     #region Debug
+
+    private void DrawLineSegments(List<LineSegment> segments, Color color)
+    {
+        Gizmos.color = color;
+        for (int i = 0; i < segments.Count; i++)
+        {
+            Vector2 left = (Vector2)segments[i].p0;
+            Vector2 right = (Vector2)segments[i].p1;
+            Gizmos.DrawLine((Vector3)left, (Vector3)right);
+        }
+    }
+
+    private void DrawRandomVoronoiCell()
+    {
+        Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
+        List<LineSegment> cell = voronoi.VoronoiBoundaryForSite(coord);
+        DrawLineSegments(cell, Color.blue);
+
+    }
+
     private void DrawVoronoi()
     {
-        if (voronoi == null)
-            return;
-
         List<LineSegment> voronoiDiagram = voronoi.VoronoiDiagram();
-        if (voronoiDiagram != null)
-        {
-            Gizmos.color = Color.white;
-            for (int i = 0; i < voronoiDiagram.Count; i++)
-            {
-                Vector2 left = (Vector2)voronoiDiagram[i].p0;
-                Vector2 right = (Vector2)voronoiDiagram[i].p1;
-                Gizmos.DrawLine((Vector3)left, (Vector3)right);
-            }
-        }
+        DrawLineSegments(voronoiDiagram, Color.white);
     }
 
     private void DrawDelaunay()
     {
-        if (voronoi == null)
-            return;
-
         List<LineSegment> delaunay = voronoi.DelaunayTriangulation();
-
-        Gizmos.color = Color.magenta;
-        if (delaunay != null)
-        {
-            for (int i = 0; i < delaunay.Count; i++)
-            {
-                Vector2 left = (Vector2)delaunay[i].p0;
-                Vector2 right = (Vector2)delaunay[i].p1;
-                Gizmos.DrawLine((Vector3)left, (Vector3)right);
-            }
-        }
+        DrawLineSegments(delaunay, Color.red);
     }
 
     private void DrawSpanningTree()
     {
-        if (voronoi == null)
-            return;
-
         List<LineSegment> tree = voronoi.SpanningTree();
 
         if (tree != null)
