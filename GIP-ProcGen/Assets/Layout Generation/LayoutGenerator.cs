@@ -18,7 +18,7 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private System.Random random;
     [SerializeField]
-    private bool drawVoronoi, drawDelaunay, drawSpanningTree, drawRandomCell;
+    private bool drawVoronoi, drawDelaunay, drawSpanningTree, drawRandomCell = false;
 
     [SerializeField]
     private int roomCount = 1;
@@ -26,6 +26,17 @@ public class LayoutGenerator : MonoBehaviour
     private int minRoomSize, maxRoomSize;
 
     private Voronoi voronoi;
+
+    public List<LineSegment> GenerateLayout()
+    {
+        List<LineSegment> layout = null;
+
+        //TEST
+        Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
+        layout = voronoi.VoronoiBoundaryForSite(coord);
+
+        return layout;
+    }
 
     // Return the same random every time this is called
     private System.Random GetRandom()
@@ -69,7 +80,10 @@ public class LayoutGenerator : MonoBehaviour
         if (drawSpanningTree)
             DrawSpanningTree();
         if (drawRandomCell)
-            DrawRandomVoronoiCell();
+        {
+            for (int i = 0; i < roomCount; i++)
+                DrawRandomVoronoiCell(seed + i);
+        }
     }
     #region Debug
 
@@ -84,12 +98,11 @@ public class LayoutGenerator : MonoBehaviour
         }
     }
 
-    private void DrawRandomVoronoiCell()
+    private void DrawRandomVoronoiCell(string seed)
     {
         Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
         List<LineSegment> cell = voronoi.VoronoiBoundaryForSite(coord);
         DrawLineSegments(cell, Color.blue);
-
     }
 
     private void DrawVoronoi()
