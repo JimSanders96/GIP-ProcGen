@@ -32,6 +32,7 @@ public class LayoutGenerator : MonoBehaviour
         List<LineSegment> layout = null;
 
         //TEST
+        voronoi = GenerateVoronoiDiagram();
         Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
         layout = voronoi.VoronoiBoundaryForSite(coord);
 
