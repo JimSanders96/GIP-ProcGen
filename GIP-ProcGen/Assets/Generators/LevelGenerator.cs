@@ -35,13 +35,8 @@ public class LevelGenerator : MonoBehaviour
                 vertices.Add(p1);
         }
 
-        // TEMP
-        vertices.Clear();
-        vertices.Add(new Vector2(0, 1));
-        vertices.Add(new Vector2(0, 0));
-        vertices.Add(new Vector2(1, 1));
-        vertices.Add(new Vector2(1, 0));
+        //TODO: Make sure vertices are indexed clockwise
 
-        geometryGenerator.GenerateMesh(vertices.ToArray());
+        geometryGenerator.GenerateMesh(vertices);
     }
 }
