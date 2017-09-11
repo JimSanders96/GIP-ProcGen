@@ -21,6 +21,7 @@ public class GeometryGenerator : MonoBehaviour
         List<int> indices = null;
         List<Vector3> vertices = null;
 
+        // Sort the points clockwise
         Vector2[] pointsArray = points.ToArray();
         Vector2 origin = FindOrigin(pointsArray);
         Array.Sort(pointsArray, new ClockwiseComparer(origin));

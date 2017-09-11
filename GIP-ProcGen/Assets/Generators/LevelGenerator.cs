@@ -29,13 +29,12 @@ public class LevelGenerator : MonoBehaviour
             Vector2 p0 = (Vector2)line.p0;
             Vector2 p1 = (Vector2)line.p1;
 
+            // Filter duplicate vertices
             if (!vertices.Contains(p0))
                 vertices.Add(p0);
             if (!vertices.Contains(p1))
                 vertices.Add(p1);
         }
-
-        //TODO: Make sure vertices are indexed clockwise
 
         geometryGenerator.GenerateMesh(vertices);
     }

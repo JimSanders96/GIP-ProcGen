@@ -20,7 +20,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4909359403969790}
   - component: {fileID: 114774425957387006}
-  - component: {fileID: 114983988879357312}
   m_Layer: 0
   m_Name: LevelGenerator
   m_TagString: Untagged
@@ -53,21 +52,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   seed: asd
-  smoothingFactor: 1
   pointCount: 300
   width: 200
   height: 200
   drawVoronoi: 1
   drawDelaunay: 0
   drawSpanningTree: 1
---- !u!114 &114983988879357312
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1793197168336606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ba11a9f4e1be0842a32c7d314a9335c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  drawRandomCell: 0
+  roomCount: 1
+  minRoomSize: 0
+  maxRoomSize: 0

@@ -47,11 +47,6 @@ public class LayoutGenerator : MonoBehaviour
         return random;
     }
 
-    private void Awake()
-    {
-        voronoi = GenerateVoronoiDiagram();
-    }
-
     private Voronoi GenerateVoronoiDiagram()
     {
         List<Vector2> points = new List<Vector2>();
@@ -83,7 +78,7 @@ public class LayoutGenerator : MonoBehaviour
         if (drawRandomCell)
         {
             for (int i = 0; i < roomCount; i++)
-                DrawRandomVoronoiCell(seed + i);
+                DrawRandomVoronoiCell(seed);
         }
     }
     #region Debug
