@@ -68,7 +68,7 @@ public class LayoutGenerator : MonoBehaviour
         }
 
         //TODO: Remove inner LineSegments / find the convex hull
-        // Currently, the geometry generator aligns vertices clockwise. This, however, does not correspond to the final room in case of size > 1.
+        // Currently, the geometry generator aligns vertices clockwise. This, however, screws up the final room mesh when it contains an inward angle.
 
         return finalRoom;
     }

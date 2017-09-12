@@ -501,6 +501,11 @@ Prefab:
       propertyPath: seed
       value: asfas
       objectReference: {fileID: 0}
+    - target: {fileID: 114774425957387006, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: pointCount
+      value: 300
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 383890fc3460478419c1a6722043e130, type: 2}
   m_IsPrefabParent: 0
