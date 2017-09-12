@@ -16,27 +16,58 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private int height = 1000;
     [SerializeField]
+    private int roomSize = 1;
+    [SerializeField]
+    private bool drawVoronoi, drawDelaunay, drawSpanningTree;
+
     private System.Random random;
-    [SerializeField]
-    private bool drawVoronoi, drawDelaunay, drawSpanningTree, drawRandomCell = false;
-
-    [SerializeField]
-    private int roomCount = 1;
-    [SerializeField]
-    private int minRoomSize, maxRoomSize;
-
     private Voronoi voronoi;
+    private List<LineSegment> _layout;
 
+    /// <summary>
+    /// Generate the level layout based on a voronoi diagram and level parameters.
+    /// ++ Currently returns a single room selected from a voronoi diagram ++
+    /// </summary>
+    /// <returns></returns>
     public List<LineSegment> GenerateLayout()
     {
-        List<LineSegment> layout = null;
-
-        //TEST
         voronoi = GenerateVoronoiDiagram();
-        Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
-        layout = voronoi.VoronoiBoundaryForSite(coord);
-
+        List<LineSegment> layout = GenerateRoom(voronoi, roomSize);
+        _layout = layout;
         return layout;
+    }
+
+    /// <summary>
+    /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
+    /// to it until the required size has been met.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <returns></returns>
+    public List<LineSegment> GenerateRoom(Voronoi voronoi, int size)
+    {
+        if (size < 1)
+            return null;
+
+        //Select a random site from the voronoi diagram
+        Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
+
+        //Start building the final room from the cell at the coord
+        List<LineSegment> finalRoom = voronoi.VoronoiBoundaryForSite(coord);
+
+        //Get the sites neighboring the selected cell
+        List<Vector2> neighborSites = voronoi.NeighborSitesForSite(coord);
+
+        //Add neighboring cells to the final room until the required room size has been met.
+        //If a LineSegment already exists within the room, don't add it.
+        for (int i = 0; i < size - 1; i++)
+        {
+            List<LineSegment> neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
+            foreach (LineSegment line in neighbor)
+                //if (!finalRoom.Contains(line))
+                finalRoom.Add(line);
+        }
+
+        return finalRoom;
     }
 
     // Return the same random every time this is called
@@ -75,11 +106,9 @@ public class LayoutGenerator : MonoBehaviour
             DrawDelaunay();
         if (drawSpanningTree)
             DrawSpanningTree();
-        if (drawRandomCell)
-        {
-            for (int i = 0; i < roomCount; i++)
-                DrawRandomVoronoiCell(seed);
-        }
+
+        DrawLayout();
+
     }
     #region Debug
 
@@ -94,6 +123,15 @@ public class LayoutGenerator : MonoBehaviour
         }
     }
 
+    private void DrawLayout()
+    {
+        List<LineSegment> l = _layout;
+        if (l == null)
+            return;
+
+        DrawLineSegments(l, Color.blue);
+    }
+
     private void DrawRandomVoronoiCell(string seed)
     {
         Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
@@ -103,8 +141,8 @@ public class LayoutGenerator : MonoBehaviour
 
     private void DrawVoronoi()
     {
-        List<LineSegment> voronoiDiagram = voronoi.VoronoiDiagram();
-        DrawLineSegments(voronoiDiagram, Color.white);
+        List<LineSegment> diagram = voronoi.VoronoiDiagram();
+        DrawLineSegments(diagram, Color.white);
     }
 
     private void DrawDelaunay()
