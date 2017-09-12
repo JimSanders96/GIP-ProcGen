@@ -63,9 +63,12 @@ public class LayoutGenerator : MonoBehaviour
         {
             List<LineSegment> neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
             foreach (LineSegment line in neighbor)
-                //if (!finalRoom.Contains(line))
+                if (!finalRoom.Contains(line))
                 finalRoom.Add(line);
         }
+
+        //TODO: Remove inner LineSegments / find the convex hull
+        // Currently, the geometry generator aligns vertices clockwise. This, however, does not correspond to the final room in case of size > 1.
 
         return finalRoom;
     }

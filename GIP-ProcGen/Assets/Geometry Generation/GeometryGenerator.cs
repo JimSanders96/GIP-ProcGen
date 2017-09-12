@@ -7,6 +7,8 @@ using UnityEngine;
 public class GeometryGenerator : MonoBehaviour
 {
 
+    public Material material;
+
     public void GenerateMesh(List<Vector2> points)
     {
         // Init
@@ -16,12 +18,13 @@ public class GeometryGenerator : MonoBehaviour
         go.AddComponent<MeshCollider>();
         go.AddComponent<MeshRenderer>();
         Mesh mesh = mf.mesh;
+        go.GetComponent<MeshRenderer>().material = material;
 
         List<List<Vector2>> holes = new List<List<Vector2>>();
         List<int> indices = null;
         List<Vector3> vertices = null;
 
-        // Sort the points clockwise
+        // Sort the points clockwise        
         Vector2[] pointsArray = points.ToArray();
         Vector2 origin = FindOrigin(pointsArray);
         Array.Sort(pointsArray, new ClockwiseComparer(origin));
