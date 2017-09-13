@@ -22,17 +22,17 @@ public class LayoutGenerator : MonoBehaviour
 
     private System.Random random;
     private Voronoi voronoi;
-    private List<LineSegment> _layout;
+    private List<List<Vector2>> _layout;
 
     /// <summary>
     /// Generate the level layout based on a voronoi diagram and level parameters.
     /// ++ Currently returns a single room selected from a voronoi diagram ++
     /// </summary>
     /// <returns></returns>
-    public List<LineSegment> GenerateLayout()
+    public List<List<Vector2>> GenerateLayout()
     {
         voronoi = GenerateVoronoiDiagram();
-        List<LineSegment> layout = GenerateRoom(voronoi, roomSize);
+        List<List<Vector2>> layout = GenerateRoom(voronoi, roomSize);
         _layout = layout;
         return layout;
     }
@@ -43,7 +43,7 @@ public class LayoutGenerator : MonoBehaviour
     /// </summary>
     /// <param name="voronoi"></param>
     /// <returns></returns>
-    public List<LineSegment> GenerateRoom(Voronoi voronoi, int size)
+    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size)
     {
         if (size < 1)
             return null;
@@ -52,25 +52,49 @@ public class LayoutGenerator : MonoBehaviour
         Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
 
         //Start building the final room from the cell at the coord
-        List<LineSegment> finalRoom = voronoi.VoronoiBoundaryForSite(coord);
+        List<List<Vector2>> finalRoom = new List<List<Vector2>>();
+        List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(coord);
+        finalRoom.Add(GetVerticesFromLineSegments(baseRoom));
 
-        //Get the sites neighboring the selected cell
+        //Get the sites neighboring the base room
         List<Vector2> neighborSites = voronoi.NeighborSitesForSite(coord);
 
         //Add neighboring cells to the final room until the required room size has been met.
-        //If a LineSegment already exists within the room, don't add it.
+        //WARNING: Currently adds duplicate vertices to the final room in order to be able to triangulate each room-piece seperately later on.
         for (int i = 0; i < size - 1; i++)
         {
             List<LineSegment> neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
-            foreach (LineSegment line in neighbor)
-                if (!finalRoom.Contains(line))
-                finalRoom.Add(line);
+            finalRoom.Add(GetVerticesFromLineSegments(neighbor));
         }
 
-        //TODO: Remove inner LineSegments / find the convex hull
-        // Currently, the geometry generator aligns vertices clockwise. This, however, screws up the final room mesh when it contains an inward angle.
+        //Sort all room piece vertices clockwise for triangulation
+        List<List<Vector2>> clockwisePieces = new List<List<Vector2>>();
+        foreach (List<Vector2> piece in finalRoom)
+        {
+            clockwisePieces.Add(VectorUtil.SortClockwise(piece));
+        }
 
-        return finalRoom;
+        return clockwisePieces;
+    }
+
+    private List<Vector2> GetVerticesFromLineSegments(List<LineSegment> lineSegments)
+    {
+        List<Vector2> vertices = new List<Vector2>();
+
+        // Get vertices from line segments.
+        foreach (LineSegment line in lineSegments)
+        {
+            Vector2 p0 = (Vector2)line.p0;
+            Vector2 p1 = (Vector2)line.p1;
+
+            // Filter duplicate vertices
+            if (!vertices.Contains(p0))
+                vertices.Add(p0);
+            if (!vertices.Contains(p1))
+                vertices.Add(p1);
+        }
+
+        return vertices;
     }
 
     // Return the same random every time this is called
@@ -98,6 +122,9 @@ public class LayoutGenerator : MonoBehaviour
         return new Voronoi(points, colors, new Rect(0, 0, width, height));
     }
 
+
+    #region Debug
+
     private void OnDrawGizmos()
     {
         if (voronoi == null)
@@ -113,7 +140,6 @@ public class LayoutGenerator : MonoBehaviour
         DrawLayout();
 
     }
-    #region Debug
 
     private void DrawLineSegments(List<LineSegment> segments, Color color)
     {
@@ -128,11 +154,26 @@ public class LayoutGenerator : MonoBehaviour
 
     private void DrawLayout()
     {
-        List<LineSegment> l = _layout;
-        if (l == null)
-            return;
-
-        DrawLineSegments(l, Color.blue);
+        Gizmos.color = Color.blue;
+        foreach (List<Vector2> piece in _layout)
+        {
+            for (int i = 0; i < piece.Count; i++)
+            {
+                Vector2 left;
+                Vector2 right;
+                if (i + 1 < piece.Count)
+                {
+                    left = piece[i];
+                    right = piece[i + 1];
+                }
+                else
+                {
+                    left = piece[i];
+                    right = piece[0];
+                }
+                Gizmos.DrawLine(left, right);
+            }
+        }
     }
 
     private void DrawRandomVoronoiCell(string seed)
