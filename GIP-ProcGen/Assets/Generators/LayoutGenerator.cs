@@ -77,27 +77,41 @@ public class LayoutGenerator : MonoBehaviour
             List<LineSegment> neighbor = null;
             if (i < neighborSites.Count)
                 neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
+
             //When no more neighbors are available, start adding the neighbors' neighbors
+            //TODO: Fix this shit
             else
             {
-                List<Vector2> recursiveNeighborSites = voronoi.NeighborSitesForSite(RandomUtil.RandomElement(neighborSites, false, seed + i));
-                Vector2 newSite = coord;
                 bool found = false;
-                foreach (Vector2 site in recursiveNeighborSites)
-                    if (site != coord && !neighborSites.Contains(site))
+                Vector2 newCoord = Vector2.zero;
+
+                //Find a neighboring site that has available neighbors
+                foreach (Vector2 site in neighborSites)
+                {
+                    List<Vector2> neighbors = voronoi.NeighborSitesForSite(site);
+                    foreach (Vector2 n in neighbors)
                     {
-                        newSite = site;
-                        found = true;
+                        if (n != coord && !neighborSites.Contains(n))
+                        {
+                            newCoord = n;
+                            found = true;
+                            break;
+                        }
                     }
 
+                    if (found)
+                        break;
+                }
+
+                //Pick one of those neighbors and add it to the room
                 if (found)
                 {
-                    neighbor = voronoi.VoronoiBoundaryForSite(newSite);
-                    neighborSites.Add(newSite);
+                    neighbor = voronoi.VoronoiBoundaryForSite(newCoord);
+                    neighborSites.Add(newCoord);
                 }
                 else
                 {
-                    Debug.LogWarning("Could not find a neighboring site at iteration " + i);
+                    Debug.LogWarning("asdasdCould not find a neighboring site at iteration " + i);
                     return null;
                 }
             }
