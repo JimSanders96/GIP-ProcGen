@@ -24,7 +24,7 @@ public class LayoutGenerator : MonoBehaviour
 
     /// <summary>
     /// Generate the level layout based on a voronoi diagram and level parameters.
-    /// ++ Currently returns a single room selected from a voronoi diagram ++
+    /// NOTE: Layout currently consists of only rooms
     /// </summary>
     /// <returns></returns>
     public List<List<Vector2>> GenerateLayout(int roomSize, int roomCount)
@@ -32,6 +32,8 @@ public class LayoutGenerator : MonoBehaviour
         voronoi = GenerateVoronoiObject();
         List<List<Vector2>> layout = new List<List<Vector2>>();
 
+        //Generate rooms
+        //TEMP: Add rooms directly to layout
         for (int i = 0; i < roomCount; i++)
         {
             List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, randomSeed + i);
@@ -79,7 +81,6 @@ public class LayoutGenerator : MonoBehaviour
                 neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
 
             //When no more neighbors are available, start adding the neighbors' neighbors
-            //TODO: Fix this shit
             else
             {
                 bool found = false;
@@ -103,7 +104,7 @@ public class LayoutGenerator : MonoBehaviour
                         break;
                 }
 
-                //Pick one of those neighbors and add it to the room
+                //Set the neighbor and add it to the neighborSites list so it can be used to find more neighbors
                 if (found)
                 {
                     neighbor = voronoi.VoronoiBoundaryForSite(newCoord);
@@ -111,11 +112,12 @@ public class LayoutGenerator : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("asdasdCould not find a neighboring site at iteration " + i);
+                    Debug.LogWarning("Could not find a neighboring site at iteration " + i);
                     return null;
                 }
             }
 
+            //Add the found available neighbor to the room
             finalRoomVertices.Add(GetVerticesFromLineSegments(neighbor));
         }
 

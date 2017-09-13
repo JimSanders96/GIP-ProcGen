@@ -6,7 +6,9 @@ using UnityEngine;
 [RequireComponent(typeof(GeometryGenerator), typeof(LayoutGenerator))]
 public class LevelGenerator : MonoBehaviour
 {
+    [Range(1,15)]
     public int roomSize = 1;
+    [Range(1,5)]
     public int roomCount = 1;
 
     private GeometryGenerator geometryGenerator;
