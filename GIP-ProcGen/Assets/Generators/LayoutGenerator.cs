@@ -16,6 +16,8 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private int height = 1000;
     [SerializeField]
+    private int relaxation = 0;
+    [SerializeField]
     private bool drawVoronoi = true, drawDelaunay = false, drawSpanningTree = false;
 
     private System.Random random;
@@ -31,6 +33,12 @@ public class LayoutGenerator : MonoBehaviour
     {
         voronoi = GenerateVoronoiObject();
         List<List<Vector2>> layout = new List<List<Vector2>>();
+
+        //Apply Lloyd's relaxation to voronoi 
+        for (int i = 0; i < relaxation; i++)
+        {
+            voronoi = RelaxVoronoi(voronoi);
+        }
 
         //Generate rooms
         //TEMP: Add rooms directly to layout
@@ -187,6 +195,29 @@ public class LayoutGenerator : MonoBehaviour
         }
 
         return new Voronoi(points, colors, new Rect(0, 0, width, height));
+    }
+
+    /// <summary>
+    /// Apply Lloyd's relaxation to a voronoi object to 'smoothen' the diagram.
+    /// </summary>
+    /// <returns></returns>
+    private Voronoi RelaxVoronoi(Voronoi input)
+    {
+        List<Vector2> siteCoords = input.SiteCoords();
+        List<Vector2> adjustedSiteCoords = new List<Vector2>();
+
+        //Reset each site to the centroid of its vertices
+        foreach (Vector2 site in siteCoords)
+        {
+            List<LineSegment> boundary = input.VoronoiBoundaryForSite(site);
+            List<Vector2> vertices = GetVerticesFromLineSegments(boundary);
+            Vector2 center = VectorUtil.FindOrigin(vertices);
+            adjustedSiteCoords.Add(center);
+        }
+
+        Voronoi output = new Voronoi(adjustedSiteCoords, input.SiteColors(), input.plotBounds);
+
+        return output;
     }
 
 
