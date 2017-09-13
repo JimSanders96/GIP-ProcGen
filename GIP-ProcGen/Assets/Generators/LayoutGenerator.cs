@@ -8,7 +8,7 @@ public class LayoutGenerator : MonoBehaviour
 {
 
     [SerializeField]
-    private string seed = "lelele";
+    private string randomSeed = "lelele";
     [SerializeField]
     private int pointCount = 150;
     [SerializeField]
@@ -16,9 +16,7 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private int height = 1000;
     [SerializeField]
-    private int roomSize = 1;
-    [SerializeField]
-    private bool drawVoronoi, drawDelaunay, drawSpanningTree;
+    private bool drawVoronoi = true, drawDelaunay = false, drawSpanningTree = false;
 
     private System.Random random;
     private Voronoi voronoi;
@@ -29,10 +27,16 @@ public class LayoutGenerator : MonoBehaviour
     /// ++ Currently returns a single room selected from a voronoi diagram ++
     /// </summary>
     /// <returns></returns>
-    public List<List<Vector2>> GenerateLayout()
+    public List<List<Vector2>> GenerateLayout(int roomSize, int roomCount)
     {
-        voronoi = GenerateVoronoiDiagram();
-        List<List<Vector2>> layout = GenerateRoom(voronoi, roomSize);
+        voronoi = GenerateVoronoiObject();
+        List<List<Vector2>> layout = new List<List<Vector2>>();
+
+        for (int i = 0; i < roomCount; i++)
+        {
+            layout.AddRange(GenerateRoom(voronoi, roomSize, randomSeed + i));
+        }
+        Debug.Log("Pieces in layout: " + layout.Count);
         _layout = layout;
         return layout;
     }
@@ -43,7 +47,7 @@ public class LayoutGenerator : MonoBehaviour
     /// </summary>
     /// <param name="voronoi"></param>
     /// <returns></returns>
-    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size)
+    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size, string seed)
     {
         if (size < 1)
             return null;
@@ -52,9 +56,9 @@ public class LayoutGenerator : MonoBehaviour
         Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
 
         //Start building the final room from the cell at the coord
-        List<List<Vector2>> finalRoom = new List<List<Vector2>>();
         List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(coord);
-        finalRoom.Add(GetVerticesFromLineSegments(baseRoom));
+        List<List<Vector2>> finalRoomVertices = new List<List<Vector2>>();
+        finalRoomVertices.Add(GetVerticesFromLineSegments(baseRoom));
 
         //Get the sites neighboring the base room
         List<Vector2> neighborSites = voronoi.NeighborSitesForSite(coord);
@@ -64,19 +68,25 @@ public class LayoutGenerator : MonoBehaviour
         for (int i = 0; i < size - 1; i++)
         {
             List<LineSegment> neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
-            finalRoom.Add(GetVerticesFromLineSegments(neighbor));
+            finalRoomVertices.Add(GetVerticesFromLineSegments(neighbor));
         }
 
         //Sort all room piece vertices clockwise for triangulation
-        List<List<Vector2>> clockwisePieces = new List<List<Vector2>>();
-        foreach (List<Vector2> piece in finalRoom)
+        List<List<Vector2>> clockwiseVertices = new List<List<Vector2>>();
+        foreach (List<Vector2> vertexSet in finalRoomVertices)
         {
-            clockwisePieces.Add(VectorUtil.SortClockwise(piece));
+            clockwiseVertices.Add(VectorUtil.SortClockwise(vertexSet));
         }
 
-        return clockwisePieces;
+        return clockwiseVertices;
     }
 
+    /// <summary>
+    /// Returns a list of all vertices in the lineSegments. 
+    /// Filters out duplicate vertices.
+    /// </summary>
+    /// <param name="lineSegments"></param>
+    /// <returns></returns>
     private List<Vector2> GetVerticesFromLineSegments(List<LineSegment> lineSegments)
     {
         List<Vector2> vertices = new List<Vector2>();
@@ -97,15 +107,22 @@ public class LayoutGenerator : MonoBehaviour
         return vertices;
     }
 
-    // Return the same random every time this is called
+    /// <summary>
+    /// Return the same random every time this is called
+    /// </summary>
+    /// <returns></returns>
     private System.Random GetRandom()
     {
         if (random == null)
-            random = new System.Random(seed.GetHashCode());
+            random = new System.Random(randomSeed.GetHashCode());
         return random;
     }
 
-    private Voronoi GenerateVoronoiDiagram()
+    /// <summary>
+    /// Generates a voronoi object based on the width and height parameters of this class.
+    /// </summary>
+    /// <returns></returns>
+    private Voronoi GenerateVoronoiObject()
     {
         List<Vector2> points = new List<Vector2>();
         List<uint> colors = new List<uint>();
@@ -138,7 +155,6 @@ public class LayoutGenerator : MonoBehaviour
             DrawSpanningTree();
 
         DrawLayout();
-
     }
 
     private void DrawLineSegments(List<LineSegment> segments, Color color)

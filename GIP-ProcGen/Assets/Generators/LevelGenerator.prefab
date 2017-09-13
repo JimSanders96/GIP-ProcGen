@@ -19,7 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4909359403969790}
+  - component: {fileID: 114036995127572550}
   - component: {fileID: 114774425957387006}
+  - component: {fileID: 114369272124265192}
   m_Layer: 0
   m_Name: LevelGenerator
   m_TagString: Untagged
@@ -40,6 +42,31 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &114036995127572550
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1793197168336606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4306525e41662c4bac1ea69d8280b7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  roomSize: 3
+  roomCount: 3
+--- !u!114 &114369272124265192
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1793197168336606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 276598d46daf53f428d0b28037d69575, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  material: {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
 --- !u!114 &114774425957387006
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -51,14 +78,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8c19c868e1b098438691628e971c4be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  seed: asd
+  seed: sf
   pointCount: 300
   width: 200
   height: 200
   drawVoronoi: 1
   drawDelaunay: 0
-  drawSpanningTree: 1
-  drawRandomCell: 0
-  roomCount: 1
-  minRoomSize: 0
-  maxRoomSize: 0
+  drawSpanningTree: 0
