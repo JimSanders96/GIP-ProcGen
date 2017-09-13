@@ -34,7 +34,13 @@ public class LayoutGenerator : MonoBehaviour
 
         for (int i = 0; i < roomCount; i++)
         {
-            layout.AddRange(GenerateRoom(voronoi, roomSize, randomSeed + i));
+            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, randomSeed + i);
+            if (room == null)
+            {
+                Debug.LogWarning("Failed to generate room " + i);
+                return null;
+            }
+            layout.AddRange(room);
         }
         Debug.Log("Pieces in layout: " + layout.Count);
         _layout = layout;
@@ -64,10 +70,38 @@ public class LayoutGenerator : MonoBehaviour
         List<Vector2> neighborSites = voronoi.NeighborSitesForSite(coord);
 
         //Add neighboring cells to the final room until the required room size has been met.
-        //WARNING: Currently adds duplicate vertices to the final room in order to be able to triangulate each room-piece seperately later on.
+        //NOTE: Currently adds duplicate vertices to the final room in order to be able to triangulate each room-piece seperately later on.
         for (int i = 0; i < size - 1; i++)
         {
-            List<LineSegment> neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
+            //Start adding neighbors
+            List<LineSegment> neighbor = null;
+            if (i < neighborSites.Count)
+                neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
+            //When no more neighbors are available, start adding the neighbors' neighbors
+            else
+            {
+                List<Vector2> recursiveNeighborSites = voronoi.NeighborSitesForSite(RandomUtil.RandomElement(neighborSites, false, seed + i));
+                Vector2 newSite = coord;
+                bool found = false;
+                foreach (Vector2 site in recursiveNeighborSites)
+                    if (site != coord && !neighborSites.Contains(site))
+                    {
+                        newSite = site;
+                        found = true;
+                    }
+
+                if (found)
+                {
+                    neighbor = voronoi.VoronoiBoundaryForSite(newSite);
+                    neighborSites.Add(newSite);
+                }
+                else
+                {
+                    Debug.LogWarning("Could not find a neighboring site at iteration " + i);
+                    return null;
+                }
+            }
+
             finalRoomVertices.Add(GetVerticesFromLineSegments(neighbor));
         }
 
@@ -170,6 +204,8 @@ public class LayoutGenerator : MonoBehaviour
 
     private void DrawLayout()
     {
+        if (_layout == null)
+            return;
         Gizmos.color = Color.blue;
         foreach (List<Vector2> piece in _layout)
         {

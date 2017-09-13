@@ -23,6 +23,11 @@ public class LevelGenerator : MonoBehaviour
     void GenerateLevel()
     {
         List<List<Vector2>> layout = layoutGenerator.GenerateLayout(roomSize, roomCount);
+        if(layout == null)
+        {
+            Debug.LogError("Could not generate layout!");
+            return;
+        }
         geometryGenerator.GenerateMesh(layout);
     }
 }
