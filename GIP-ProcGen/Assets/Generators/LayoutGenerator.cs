@@ -286,6 +286,7 @@ public class LayoutGenerator : MonoBehaviour
             {
                 closestDistance = distance;
                 closestSite = site;
+                Debug.Log("Closest site: " + closestSite);
             }
         }
 
