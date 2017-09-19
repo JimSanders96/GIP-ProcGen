@@ -80,6 +80,7 @@ public class LayoutGenerator : MonoBehaviour
 
         //Generate paths between rooms and add them to the layout
         //TEMP: simply generate a path between 2 following rooms
+        //TODO: remove duplicate vertices <===========================<==================<==================<============<!!!!@$@#$^#$%@^!@#$%
         for (int i = 0; i < roomOriginSites.Count - 1; i++)
         {
             // if there are no more rooms in line, loop back to the first room.
