@@ -8,13 +8,17 @@ public class LayoutGenerator : MonoBehaviour
 {
 
     [SerializeField]
-    private string randomSeed = "lelele";
+    private string seed = "lelele";
+    [SerializeField]
+    private bool randomSeed = false;
     [SerializeField]
     private int pointCount = 150;
     [SerializeField]
     private int width = 1000;
     [SerializeField]
     private int height = 1000;
+    [SerializeField, Range(0f, 0.25f)]
+    private float borderPercentage = 0.15f;
     [SerializeField]
     private int relaxation = 0;
     [SerializeField]
@@ -25,6 +29,11 @@ public class LayoutGenerator : MonoBehaviour
     private List<Vector2> roomOriginSites;
     private List<Vector2> pathSites;
     private List<List<Vector2>> _layout;
+    private float maxCoordX = 0;
+    private float minCoordX = 0;
+    private float maxCoordY = 0;
+    private float minCoordY = 0;
+    private List<Vector2> outOfBoundsCoordinates;
 
 
     /// <summary>
@@ -34,11 +43,20 @@ public class LayoutGenerator : MonoBehaviour
     /// <returns></returns>
     public List<List<Vector2>> GenerateLayout(int roomSize, int roomCount)
     {
+        // Init vars
         voronoi = GenerateVoronoiObject();
         roomOriginSites = new List<Vector2>();
         pathSites = new List<Vector2>();
-
+        maxCoordX = width - (width * borderPercentage * 0.5f);
+        maxCoordY = height - (height * borderPercentage * 0.5f);
+        minCoordX = width * borderPercentage * 0.5f;
+        minCoordY = height * borderPercentage * 0.5f;
+        outOfBoundsCoordinates = new List<Vector2>();
         List<List<Vector2>> layout = new List<List<Vector2>>();
+
+        // Randomize seed when needed
+        if (randomSeed)
+            seed = System.DateTime.Now.ToString();
 
         //Apply Lloyd's relaxation to voronoi 
         for (int i = 0; i < relaxation; i++)
@@ -50,7 +68,7 @@ public class LayoutGenerator : MonoBehaviour
         for (int i = 0; i < roomCount; i++)
         {
             Vector2 roomOriginSite;
-            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, randomSeed + i, out roomOriginSite);
+            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, seed + i, out roomOriginSite);
             if (room == null)
             {
                 Debug.LogWarning("Failed to generate room " + i);
@@ -81,6 +99,23 @@ public class LayoutGenerator : MonoBehaviour
     }
 
     /// <summary>
+    /// Returns true when the coordinate is too close to the voronoi borders
+    /// </summary>
+    /// <param name="coord"></param>
+    /// <returns></returns>
+    private bool IsOutOfBounds(Vector2 coord)
+    {
+        bool outOfBounds = true;
+
+        if (coord.x < minCoordX || coord.x > maxCoordX || coord.y < minCoordY || coord.y > maxCoordY)
+            outOfBoundsCoordinates.Add(coord);
+        else
+            outOfBounds = false;
+
+        return outOfBounds;
+    }
+
+    /// <summary>
     /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
     /// to it until the required size has been met.
     /// TODO: Incorporate 'GetVerticesForSite' for cleaner code.
@@ -95,8 +130,12 @@ public class LayoutGenerator : MonoBehaviour
             return null;
         }
 
-        //Select a random site from the voronoi diagram
+        //Select a random site from the voronoi diagram within the set borders
         roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
+        while (IsOutOfBounds(roomOriginSite))
+        {
+            roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed + outOfBoundsCoordinates.Count);
+        }
 
         //Start building the final room from the cell at the coord
         List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(roomOriginSite);
@@ -178,7 +217,7 @@ public class LayoutGenerator : MonoBehaviour
         List<LineSegment> boundary = voronoi.VoronoiBoundaryForSite(site);
         List<Vector2> vertices = GetVerticesFromLineSegments(boundary);
 
-        List<Vector2> clockwiseVertices = new List<Vector2>(VectorUtil.SortClockwise(vertices));       
+        List<Vector2> clockwiseVertices = new List<Vector2>(VectorUtil.SortClockwise(vertices));
 
         return clockwiseVertices;
     }
