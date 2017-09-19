@@ -62,11 +62,12 @@ public class LayoutGenerator : MonoBehaviour
 
         //Generate paths between rooms and add them to the layout
         //TEMP: simply generate a path between 2 following rooms
-        for (int i = 0; i < roomOriginSites.Count; i++)
+        for (int i = 0; i < roomOriginSites.Count - 1; i++)
         {
             // if there are no more rooms in line, loop back to the first room.
-            Vector2 target = i + 1 < roomOriginSites.Count ? roomOriginSites[i + 1] : roomOriginSites[i];
+            //Vector2 target = i + 1 < roomOriginSites.Count ? roomOriginSites[i + 1] : roomOriginSites[i];
             Vector2 start = roomOriginSites[i];
+            Vector2 target = roomOriginSites[i + 1];
             List<Vector2> pathSites = GetSitePathToTarget(voronoi, start, target);
             this.pathSites.AddRange(pathSites);
 
@@ -176,9 +177,10 @@ public class LayoutGenerator : MonoBehaviour
     {
         List<LineSegment> boundary = voronoi.VoronoiBoundaryForSite(site);
         List<Vector2> vertices = GetVerticesFromLineSegments(boundary);
-        VectorUtil.SortClockwise(vertices);
 
-        return vertices;
+        List<Vector2> clockwiseVertices = new List<Vector2>(VectorUtil.SortClockwise(vertices));       
+
+        return clockwiseVertices;
     }
 
     /// <summary>
