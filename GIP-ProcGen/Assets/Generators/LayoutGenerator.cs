@@ -22,7 +22,10 @@ public class LayoutGenerator : MonoBehaviour
 
     private System.Random random;
     private Voronoi voronoi;
+    private List<Vector2> roomOriginSites;
+    private List<Vector2> pathSites;
     private List<List<Vector2>> _layout;
+
 
     /// <summary>
     /// Generate the level layout based on a voronoi diagram and level parameters.
@@ -32,6 +35,9 @@ public class LayoutGenerator : MonoBehaviour
     public List<List<Vector2>> GenerateLayout(int roomSize, int roomCount)
     {
         voronoi = GenerateVoronoiObject();
+        roomOriginSites = new List<Vector2>();
+        pathSites = new List<Vector2>();
+
         List<List<Vector2>> layout = new List<List<Vector2>>();
 
         //Apply Lloyd's relaxation to voronoi 
@@ -40,18 +46,34 @@ public class LayoutGenerator : MonoBehaviour
             voronoi = RelaxVoronoi(voronoi);
         }
 
-        //Generate rooms
-        //TEMP: Add rooms directly to layout
+        //Generate rooms and add them to the layout
         for (int i = 0; i < roomCount; i++)
         {
-            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, randomSeed + i);
+            Vector2 roomOriginSite;
+            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, randomSeed + i, out roomOriginSite);
             if (room == null)
             {
                 Debug.LogWarning("Failed to generate room " + i);
                 return null;
             }
             layout.AddRange(room);
+            roomOriginSites.Add(roomOriginSite);
         }
+
+        //Generate paths between rooms and add them to the layout
+        //TEMP: simply generate a path between 2 following rooms
+        for (int i = 0; i < roomOriginSites.Count; i++)
+        {
+            // if there are no more rooms in line, loop back to the first room.
+            Vector2 target = i + 1 < roomOriginSites.Count ? roomOriginSites[i + 1] : roomOriginSites[i];
+            Vector2 start = roomOriginSites[i];
+            List<Vector2> pathSites = GetSitePathToTarget(voronoi, start, target);
+            this.pathSites.AddRange(pathSites);
+
+            List<List<Vector2>> path = GetVerticesForSites(voronoi, pathSites);
+            layout.AddRange(path);
+        }
+
         Debug.Log("Pieces in layout: " + layout.Count);
         _layout = layout;
         return layout;
@@ -60,24 +82,28 @@ public class LayoutGenerator : MonoBehaviour
     /// <summary>
     /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
     /// to it until the required size has been met.
+    /// TODO: Incorporate 'GetVerticesForSite' for cleaner code.
     /// </summary>
     /// <param name="voronoi"></param>
     /// <returns></returns>
-    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size, string seed)
+    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size, string seed, out Vector2 roomOriginSite)
     {
         if (size < 1)
+        {
+            roomOriginSite = Vector2.zero;
             return null;
+        }
 
         //Select a random site from the voronoi diagram
-        Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
+        roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
 
         //Start building the final room from the cell at the coord
-        List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(coord);
+        List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(roomOriginSite);
         List<List<Vector2>> finalRoomVertices = new List<List<Vector2>>();
         finalRoomVertices.Add(GetVerticesFromLineSegments(baseRoom));
 
         //Get the sites neighboring the base room
-        List<Vector2> neighborSites = voronoi.NeighborSitesForSite(coord);
+        List<Vector2> neighborSites = voronoi.NeighborSitesForSite(roomOriginSite);
 
         //Add neighboring cells to the final room until the required room size has been met.
         //NOTE: Currently adds duplicate vertices to the final room in order to be able to triangulate each room-piece seperately later on.
@@ -100,7 +126,7 @@ public class LayoutGenerator : MonoBehaviour
                     List<Vector2> neighbors = voronoi.NeighborSitesForSite(site);
                     foreach (Vector2 n in neighbors)
                     {
-                        if (n != coord && !neighborSites.Contains(n))
+                        if (n != roomOriginSite && !neighborSites.Contains(n))
                         {
                             newCoord = n;
                             found = true;
@@ -137,6 +163,22 @@ public class LayoutGenerator : MonoBehaviour
         }
 
         return clockwiseVertices;
+    }
+
+    /// <summary>
+    /// Returns the vertices making up the boundary around the given site.
+    /// Vertex set is sorted clockwise for rendering purposes.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <param name="site"></param>
+    /// <returns></returns>
+    private List<Vector2> GetVerticesForSite(Voronoi voronoi, Vector2 site)
+    {
+        List<LineSegment> boundary = voronoi.VoronoiBoundaryForSite(site);
+        List<Vector2> vertices = GetVerticesFromLineSegments(boundary);
+        VectorUtil.SortClockwise(vertices);
+
+        return vertices;
     }
 
     /// <summary>
@@ -220,6 +262,87 @@ public class LayoutGenerator : MonoBehaviour
         return output;
     }
 
+    /// <summary>
+    /// From a set of potential sites, return the one closest to the target site in a given voronoi object.
+    /// Excluded sites will not be considered.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <param name="options"></param>
+    /// <param name="target"></param>
+    /// <param name="excluded"></param>
+    /// <returns></returns>
+    private Vector2 GetSiteClosestToTarget(Voronoi voronoi, List<Vector2> options, Vector2 target, List<Vector2> excluded)
+    {
+        Vector2 closestSite = Vector2.zero;
+        float closestDistance = 10000000000f;
+
+        // check the distance to target for each potential site and keep track of the closest one.
+        foreach (Vector2 site in options)
+        {
+            float distance = Vector2.Distance(site, target);
+            if (!excluded.Contains(site) && distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestSite = site;
+            }
+        }
+
+        return closestSite;
+    }
+
+    /// <summary>
+    /// Returns all sites on the path between start and target.
+    /// Start and target are not included in the path.
+    /// Excluded sites will not be checked.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <param name="start"></param>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    private List<Vector2> GetSitePathToTarget(Voronoi voronoi, Vector2 start, Vector2 target)
+    {
+        List<Vector2> path = new List<Vector2>();
+        Vector2 lastSite = start;
+        bool found = false;
+
+        while (!found)
+        {
+            List<Vector2> neighbors = voronoi.NeighborSitesForSite(lastSite);
+
+            // Check if the target has been reached
+            if (neighbors.Contains(target))
+            {
+                found = true;
+                break;
+            }
+
+            // Find the neighbor closest to the target and add it to the path
+            Vector2 closestSite = GetSiteClosestToTarget(voronoi, neighbors, target, path);
+            path.Add(closestSite);
+            lastSite = closestSite;
+        }
+
+        return path;
+    }
+
+    /// <summary>
+    /// Returns a list of vertex sets from every site in the site set.
+    /// Vertex sets are sorted clockwise.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <param name="startSite"></param>
+    /// <param name="targetSite"></param>
+    /// <returns></returns>
+    private List<List<Vector2>> GetVerticesForSites(Voronoi voronoi, List<Vector2> sites)
+    {
+        List<List<Vector2>> vertices = new List<List<Vector2>>();
+
+        // For every site get the site's vertices and add them to the output.
+        foreach (Vector2 site in sites)
+            vertices.Add(GetVerticesForSite(voronoi, site));
+
+        return vertices;
+    }
 
     #region Debug
 
