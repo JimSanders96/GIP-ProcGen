@@ -3,3 +3,5 @@ GIP-ProcGen/Library/
 GIP-ProcGen/Temp/
 *.csproj
 *.suo
+Library/
+ProjectSettings/
