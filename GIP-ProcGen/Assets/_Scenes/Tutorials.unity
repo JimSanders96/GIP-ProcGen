@@ -344,17 +344,21 @@ Prefab:
     - target: {fileID: 114774425957387006, guid: 383890fc3460478419c1a6722043e130,
         type: 2}
       propertyPath: pointCount
-      value: 100
+      value: 300
       objectReference: {fileID: 0}
     - target: {fileID: 114036995127572550, guid: 383890fc3460478419c1a6722043e130,
         type: 2}
       propertyPath: roomSize
+<<<<<<< HEAD
       value: 7
+=======
+      value: 10
+>>>>>>> 07c13c2134b8927477d66c64c6ac459ae4d3b5d9
       objectReference: {fileID: 0}
     - target: {fileID: 114036995127572550, guid: 383890fc3460478419c1a6722043e130,
         type: 2}
       propertyPath: roomCount
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 114774425957387006, guid: 383890fc3460478419c1a6722043e130,
         type: 2}
