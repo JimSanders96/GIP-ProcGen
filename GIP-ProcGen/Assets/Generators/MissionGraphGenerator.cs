@@ -49,6 +49,7 @@ public class MissionGraphGenerator : MonoBehaviour
         PrintMissionGraph();
     }
 
+    // SOMEWHERE IN HERE IS A BUG THAT CAUSES IT TO PRINT THE GOAL NODE TWICE AND SKIP THE FINAL LOCK
     public void PrintMissionGraph()
     {
         bool endReached = false;
@@ -73,13 +74,14 @@ public class MissionGraphGenerator : MonoBehaviour
                 }
             }
 
-            // Print the node and mark is as checked
-            Debug.Log(nextNode.Value);
-            checkedNodes.Add(nextNode);
 
             // Mark the end of the graph
             if (!foundNextNode)
                 endReached = true;
+
+            // Print the node and mark is as checked
+            Debug.Log(nextNode.Value);
+            checkedNodes.Add(nextNode);            
         }
     }
 
@@ -102,6 +104,12 @@ public class MissionGraphGenerator : MonoBehaviour
         missionGraph.AddNode(goal);
         goalNode = (GraphNode<MissionNodeData>)missionGraph.Nodes.FindByValue(goal);
 
+        string debug = "";
+        foreach (GraphNode<MissionNodeData> node in missionGraph.Nodes)
+        {
+            debug += node.Value.type + ", ";
+        }
+        Debug.Log("These nodes appear in the graph: " + debug);
     }
 
     /// <summary>
@@ -152,14 +160,14 @@ public class MissionGraphGenerator : MonoBehaviour
     private void ConnectAllNodes()
     {
         GraphNode<MissionNodeData> currentNode = entranceNode;
-        GraphNode<MissionNodeData> nextNode = GetNextNode();
+        GraphNode<MissionNodeData> nextNode;
 
         // Create a linear graph by simply connecting the current node with the next node.
         while (GetAvailableNodeCount() > 0)
         {
+            nextNode = GetNextNode();
             missionGraph.AddUndirectedEdge(currentNode, nextNode, 1);
             currentNode = nextNode;
-            nextNode = GetNextNode();
         }
 
         nextNode = goalNode;
@@ -216,7 +224,6 @@ public class MissionGraphGenerator : MonoBehaviour
                     break;
                 }
             }
-
         }
 
         // Remove the node from its list.
