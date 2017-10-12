@@ -56,12 +56,14 @@ public class MissionGraphGenerator : MonoBehaviour
         bool foundNextNode = false;
         GraphNode<MissionNodeData> nextNode = entranceNode;
         List<GraphNode<MissionNodeData>> checkedNodes = new List<GraphNode<MissionNodeData>>();
-        Debug.Log(nextNode.Value);
-        checkedNodes.Add(nextNode);
 
         while (!endReached)
         {
             foundNextNode = false;
+
+            // Print the node and mark is as checked
+            Debug.Log(nextNode.Value);
+            checkedNodes.Add(nextNode);
 
             // Since the graph is currently always linear (each node has only 1 or 2 connections), debug it linearly
             foreach (GraphNode<MissionNodeData> neighbor in nextNode.Neighbors)
@@ -79,9 +81,7 @@ public class MissionGraphGenerator : MonoBehaviour
             if (!foundNextNode)
                 endReached = true;
 
-            // Print the node and mark is as checked
-            Debug.Log(nextNode.Value);
-            checkedNodes.Add(nextNode);            
+                       
         }
     }
 
