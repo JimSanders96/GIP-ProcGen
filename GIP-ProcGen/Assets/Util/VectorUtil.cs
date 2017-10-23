@@ -83,6 +83,11 @@ public static class VectorUtil
 
     #endregion
 
+    public static bool WithinRange(Vector2 origin, Vector2 target, float radius)
+    {
+        return Vector2.Distance(origin, target) <= radius;
+    }
+
     /// <summary>
     /// Returns the average Vector2 of a given set of Vector2's.
     /// </summary>

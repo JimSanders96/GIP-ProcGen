@@ -197,6 +197,73 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1411520723
+Prefab:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: -1.171483
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalPosition.y
+      value: 1.8496156
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: 0.26027012
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4909359403969790, guid: 383890fc3460478419c1a6722043e130, type: 2}
+      propertyPath: m_RootOrder
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 114774425957387006, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: randomSeed
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114774425957387006, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: relaxation
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 114036995127572550, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: roomSize
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 114774425957387006, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: pointCount
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 114036995127572550, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: roomRadius
+      value: 30
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 100100000, guid: 383890fc3460478419c1a6722043e130, type: 2}
+  m_IsPrefabParent: 0
 --- !u!1 &1942651939
 GameObject:
   m_ObjectHideFlags: 0

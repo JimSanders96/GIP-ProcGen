@@ -178,4 +178,38 @@ public static class LayoutUtil
         return vertices;
     }
 
+    /// <summary>
+    /// Returns a list of sites surrounding the start site within a square with given width.
+    /// Result includes the start site.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <param name="start"></param>
+    /// <param name="radius"></param>
+    /// <returns></returns>
+    public static List<Vector2> GetSitesInSquare(Voronoi voronoi, Vector2 start, float squareWidth)
+    {
+        List<Vector2> pointsInRadius = new List<Vector2>();
+
+        foreach (Vector2 site in voronoi.SiteCoords())
+        {
+            if ((site.x >= start.x - squareWidth && site.x <= start.x + squareWidth) && (site.y >= start.y - squareWidth && site.y <= start.y + squareWidth))
+                pointsInRadius.Add(site);
+        }
+
+        return pointsInRadius;
+    }
+
+    public static List<Vector2> GetSitesInRadius(Voronoi voronoi, Vector2 start, float radius)
+    {
+        List<Vector2> pointsInRadius = new List<Vector2>();
+
+        foreach (Vector2 site in voronoi.SiteCoords())
+        {
+            if (VectorUtil.WithinRange(start, site, radius))
+                pointsInRadius.Add(site);
+        }
+
+        return pointsInRadius;
+    }
+
 }

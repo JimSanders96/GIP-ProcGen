@@ -63,15 +63,33 @@ public class LayoutGenerator : MonoBehaviour
         return outOfBounds;
     }
 
+    public List<List<Vector2>> GenerateLayout(Graph<MissionNodeData> missionGraph)
+    {
+        // Init vars
+        voronoi = LayoutUtil.GenerateVoronoiObject(pointCount, width, height, GetRandom());
+        roomOriginSites = new List<Vector2>();
+        pathSites = new List<Vector2>();
+        maxCoordX = width - (width * borderPercentage * 0.5f);
+        maxCoordY = height - (height * borderPercentage * 0.5f);
+        minCoordX = width * borderPercentage * 0.5f;
+        minCoordY = height * borderPercentage * 0.5f;
+        outOfBoundsCoordinates = new List<Vector2>();
+        List<List<Vector2>> layout = new List<List<Vector2>>();
+
+
+
+        return layout;
+    }
+
     /// <summary>
     /// Generate the level layout based on a voronoi diagram and level parameters.
     /// NOTE: Layout currently consists of only rooms
     /// </summary>
     /// <returns></returns>
-    public List<List<Vector2>> GenerateLayout(int roomSize, int roomCount)
+    public List<List<Vector2>> GenerateLayout(float roomRadius, int roomCount)
     {
         // Init vars
-        voronoi = LayoutUtil.GenerateVoronoiObject(pointCount,width,height,GetRandom());
+        voronoi = LayoutUtil.GenerateVoronoiObject(pointCount, width, height, GetRandom());
         roomOriginSites = new List<Vector2>();
         pathSites = new List<Vector2>();
         maxCoordX = width - (width * borderPercentage * 0.5f);
@@ -95,7 +113,7 @@ public class LayoutGenerator : MonoBehaviour
         for (int i = 0; i < roomCount; i++)
         {
             Vector2 roomOriginSite;
-            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, seed + i, out roomOriginSite);
+            List<List<Vector2>> room = GenerateRoom(voronoi, roomRadius, seed + i, out roomOriginSite);
             if (room == null)
             {
                 Debug.LogWarning("Failed to generate room " + i);
@@ -126,7 +144,7 @@ public class LayoutGenerator : MonoBehaviour
         return layout;
     }
 
-    
+
 
     /// <summary>
     /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
@@ -135,9 +153,9 @@ public class LayoutGenerator : MonoBehaviour
     /// </summary>
     /// <param name="voronoi"></param>
     /// <returns></returns>
-    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size, string seed, out Vector2 roomOriginSite)
+    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, float radius, string seed, out Vector2 roomOriginSite)
     {
-        if (size < 1)
+        if (radius < 10f)
         {
             roomOriginSite = Vector2.zero;
             return null;
@@ -150,6 +168,17 @@ public class LayoutGenerator : MonoBehaviour
             roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed + outOfBoundsCoordinates.Count);
         }
 
+        //Construct a room by selecting all sites within a given radius around the roomOriginSite
+        List<List<Vector2>> finalRoomVertices = new List<List<Vector2>>();
+        List<Vector2> roomSites = LayoutUtil.GetSitesInRadius(voronoi, roomOriginSite, radius);
+        foreach (Vector2 site in roomSites)
+        {
+            List<LineSegment> boundary = voronoi.VoronoiBoundaryForSite(site);
+            List<Vector2> vertices = LayoutUtil.GetVerticesFromLineSegments(boundary);
+            finalRoomVertices.Add(vertices);
+        }
+
+        /*
         //Start building the final room from the cell at the coord
         List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(roomOriginSite);
         List<List<Vector2>> finalRoomVertices = new List<List<Vector2>>();
@@ -207,6 +236,7 @@ public class LayoutGenerator : MonoBehaviour
             //Add the found available neighbor to the room
             finalRoomVertices.Add(LayoutUtil.GetVerticesFromLineSegments(neighbor));
         }
+        */
 
         //Sort all room piece vertices clockwise for triangulation
         List<List<Vector2>> clockwiseVertices = new List<List<Vector2>>();
@@ -217,7 +247,7 @@ public class LayoutGenerator : MonoBehaviour
 
         return clockwiseVertices;
     }
-   
+
 
     #region Debug
 
