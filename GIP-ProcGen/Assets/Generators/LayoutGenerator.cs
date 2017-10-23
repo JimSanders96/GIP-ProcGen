@@ -76,7 +76,7 @@ public class LayoutGenerator : MonoBehaviour
         outOfBoundsCoordinates = new List<Vector2>();
         List<List<Vector2>> layout = new List<List<Vector2>>();
 
-
+        // TODO
 
         return layout;
     }
@@ -143,8 +143,6 @@ public class LayoutGenerator : MonoBehaviour
         _layout = layout;
         return layout;
     }
-
-
 
     /// <summary>
     /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
