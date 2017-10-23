@@ -178,6 +178,7 @@ public class LayoutGenerator : MonoBehaviour
             finalRoomVertices.Add(vertices);
         }
 
+        #region KEEPING THIS CODE FOR FUTURE USE 
         /*
         //Start building the final room from the cell at the coord
         List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(roomOriginSite);
@@ -237,6 +238,7 @@ public class LayoutGenerator : MonoBehaviour
             finalRoomVertices.Add(LayoutUtil.GetVerticesFromLineSegments(neighbor));
         }
         */
+        #endregion
 
         //Sort all room piece vertices clockwise for triangulation
         List<List<Vector2>> clockwiseVertices = new List<List<Vector2>>();
