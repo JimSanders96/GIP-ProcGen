@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 114036995127572550}
   - component: {fileID: 114774425957387006}
   - component: {fileID: 114369272124265192}
+  - component: {fileID: 114409566924363042}
   m_Layer: 0
   m_Name: LevelGenerator
   m_TagString: Untagged
@@ -67,6 +68,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
+--- !u!114 &114409566924363042
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1793197168336606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f8baeac329d99b4290815330e8876d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  challengeAmount: 3
+  explorationAmount: 3
+  availableMechanics: 000000000100000002000000
+  maxMechanicsPerChallenge: 2
 --- !u!114 &114774425957387006
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -78,10 +94,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8c19c868e1b098438691628e971c4be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MissionMarker: {fileID: 1515845516575238, guid: ba6f4a5979ab8374a9ff7a4d76777dc9,
+    type: 2}
   seed: sf
+  randomSeed: 1
   pointCount: 300
   width: 200
   height: 200
+  borderPercentage: 0.15
+  relaxation: 3
   drawVoronoi: 1
   drawDelaunay: 0
   drawSpanningTree: 0

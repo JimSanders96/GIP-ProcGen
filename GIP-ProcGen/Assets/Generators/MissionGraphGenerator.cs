@@ -29,10 +29,10 @@ public class MissionGraphGenerator : MonoBehaviour
 
     private void Start()
     {
-        GenerateMissionGraph();
+        //GenerateMissionGraph();
     }
 
-    public void GenerateMissionGraph()
+    public Graph<MissionNodeData> GenerateMissionGraph()
     {
         missionGraph = new Graph<MissionNodeData>();
 
@@ -47,6 +47,9 @@ public class MissionGraphGenerator : MonoBehaviour
 
         // Print the final graph for debugging
         PrintMissionGraph();
+
+        // Return the graph
+        return missionGraph;
     }
 
     // SOMEWHERE IN HERE IS A BUG THAT CAUSES IT TO PRINT THE GOAL NODE TWICE AND SKIP THE FINAL LOCK
@@ -76,12 +79,9 @@ public class MissionGraphGenerator : MonoBehaviour
                 }
             }
 
-
             // Mark the end of the graph
             if (!foundNextNode)
                 endReached = true;
-
-                       
         }
     }
 
@@ -166,12 +166,22 @@ public class MissionGraphGenerator : MonoBehaviour
         while (GetAvailableNodeCount() > 0)
         {
             nextNode = GetNextNode();
-            missionGraph.AddUndirectedEdge(currentNode, nextNode, 1);
+            missionGraph.AddUndirectedEdge(currentNode, nextNode, GetRandomEdgeWeight());
             currentNode = nextNode;
         }
 
         nextNode = goalNode;
-        missionGraph.AddUndirectedEdge(currentNode, nextNode, 1);
+        missionGraph.AddUndirectedEdge(currentNode, nextNode, GetRandomEdgeWeight());
+    }
+
+    /// <summary>
+    /// Return a random number between 1 and 2.
+    /// This number can be used to define the type of connection between mission nodes.
+    /// </summary>
+    /// <returns></returns>
+    private int GetRandomEdgeWeight()
+    {
+        return Random.Range(1, 2);
     }
 
     /// <summary>

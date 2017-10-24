@@ -7,6 +7,8 @@ using UnityEngine;
 public class LayoutGenerator : MonoBehaviour
 {
 
+    public GameObject MissionMarker;
+
     [SerializeField]
     private string seed = "lelele";
     [SerializeField]
@@ -24,10 +26,12 @@ public class LayoutGenerator : MonoBehaviour
     [SerializeField]
     private bool drawVoronoi = true, drawDelaunay = false, drawSpanningTree = false;
 
+
     private System.Random random;
     private Voronoi voronoi;
     private List<Vector2> roomOriginSites;
     private List<Vector2> pathSites;
+    private List<Vector2> roomSites;
     private List<List<Vector2>> _layout;
     private float maxCoordX = 0;
     private float minCoordX = 0;
@@ -63,12 +67,19 @@ public class LayoutGenerator : MonoBehaviour
         return outOfBounds;
     }
 
-    public List<List<Vector2>> GenerateLayout(Graph<MissionNodeData> missionGraph)
+    /// <summary>
+    /// Generate a layout based on a mission graph
+    /// </summary>
+    /// <param name="missionGraph"></param>
+    /// <param name="roomSize"></param>
+    /// <returns></returns>
+    public List<List<Vector2>> GenerateLayout(Graph<MissionNodeData> missionGraph, int roomSize)
     {
         // Init vars
         voronoi = LayoutUtil.GenerateVoronoiObject(pointCount, width, height, GetRandom());
         roomOriginSites = new List<Vector2>();
         pathSites = new List<Vector2>();
+        roomSites = new List<Vector2>();
         maxCoordX = width - (width * borderPercentage * 0.5f);
         maxCoordY = height - (height * borderPercentage * 0.5f);
         minCoordX = width * borderPercentage * 0.5f;
@@ -76,14 +87,68 @@ public class LayoutGenerator : MonoBehaviour
         outOfBoundsCoordinates = new List<Vector2>();
         List<List<Vector2>> layout = new List<List<Vector2>>();
 
-        // TODO
+        // Randomize seed when needed
+        if (randomSeed)
+            seed = System.DateTime.Now.ToString();
 
+        //Apply Lloyd's relaxation to voronoi 
+        for (int i = 0; i < relaxation; i++)
+        {
+            voronoi = LayoutUtil.RelaxVoronoi(voronoi);
+        }
+
+        // Generate rooms based on the mission graph
+        bool endReached = false;
+        bool foundNextNode = false;
+        GraphNode<MissionNodeData> nextNode = (GraphNode<MissionNodeData>)missionGraph.Nodes[0];
+        List<GraphNode<MissionNodeData>> checkedNodes = new List<GraphNode<MissionNodeData>>();
+        int count = 0;
+
+        while (!endReached)
+        {
+            foundNextNode = false;
+            count++;
+
+            // Generate a room for the current node in the graph
+            Vector2 originSite;
+            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, seed + count, out originSite);
+            layout.AddRange(room);
+            PlaceMissionMarker(originSite, nextNode.Value);
+            checkedNodes.Add(nextNode);
+
+            // Since the graph is currently always linear (each node has only 1 or 2 connections), debug it linearly
+            foreach (GraphNode<MissionNodeData> neighbor in nextNode.Neighbors)
+            {
+                if (!checkedNodes.Contains(neighbor))
+                {
+                    nextNode = neighbor;
+                    foundNextNode = true;
+                    break;
+                }
+            }
+
+            // Mark the end of the graph
+            if (!foundNextNode)
+                endReached = true;
+        }
+
+        _layout = layout;
         return layout;
     }
 
     /// <summary>
+    /// Places a mission marker at the site location, displaying the data provided.
+    /// </summary>
+    /// <param name="site"></param>
+    /// <param name="data"></param>
+    private void PlaceMissionMarker(Vector2 site, MissionNodeData data)
+    {
+        GameObject marker = Instantiate(MissionMarker, site, Quaternion.identity);
+        marker.GetComponent<MissionMarker>().Init(data);
+    }
+
+    /// <summary>
     /// Generate the level layout based on a voronoi diagram and level parameters.
-    /// NOTE: Layout currently consists of only rooms
     /// </summary>
     /// <returns></returns>
     public List<List<Vector2>> GenerateLayout(float roomRadius, int roomCount)
@@ -145,8 +210,7 @@ public class LayoutGenerator : MonoBehaviour
     }
 
     /// <summary>
-    /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
-    /// to it until the required size has been met.
+    /// Generate a room by selecting a random cell from a given voronoi grid and building a room by selecting sites around the selected random cell.
     /// TODO: Incorporate 'GetVerticesForSite' for cleaner code.
     /// </summary>
     /// <param name="voronoi"></param>
@@ -159,25 +223,61 @@ public class LayoutGenerator : MonoBehaviour
             return null;
         }
 
-        //Select a random site from the voronoi diagram within the set borders
-        roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
-        while (IsOutOfBounds(roomOriginSite))
+        //Select a random unused site from the voronoi diagram within the set borders
+        roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), true, seed);
+        int counter = 0;
+        while (IsOutOfBounds(roomOriginSite) || roomSites.Contains(roomOriginSite))
         {
-            roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed + outOfBoundsCoordinates.Count);
+            counter++;
+            roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), true, seed + counter);
         }
 
         //Construct a room by selecting all sites within a given radius around the roomOriginSite
-        List<List<Vector2>> finalRoomVertices = new List<List<Vector2>>();
-        List<Vector2> roomSites = LayoutUtil.GetSitesInRadius(voronoi, roomOriginSite, radius);
-        foreach (Vector2 site in roomSites)
+        List<List<Vector2>> newRoomVertices = new List<List<Vector2>>();
+        List<Vector2> newRoomSites = LayoutUtil.GetSitesInRadius(voronoi, roomOriginSite, radius);
+        this.roomSites.AddRange(newRoomSites);
+        foreach (Vector2 site in newRoomSites)
         {
             List<LineSegment> boundary = voronoi.VoronoiBoundaryForSite(site);
             List<Vector2> vertices = LayoutUtil.GetVerticesFromLineSegments(boundary);
-            finalRoomVertices.Add(vertices);
+            newRoomVertices.Add(vertices);
         }
 
-        #region KEEPING THIS CODE FOR FUTURE USE 
-        /*
+        //Sort all room piece vertices clockwise for triangulation
+        List<List<Vector2>> clockwiseVertices = new List<List<Vector2>>();
+        foreach (List<Vector2> vertexSet in newRoomVertices)
+        {
+            clockwiseVertices.Add(VectorUtil.SortClockwise(vertexSet));
+        }
+
+        return clockwiseVertices;
+    }
+
+    /// <summary>
+    /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
+    /// to it until the required size has been met.
+    /// TODO: Incorporate 'GetVerticesForSite' for cleaner code.
+    /// </summary>
+    /// <param name="voronoi"></param>
+    /// <returns></returns>
+    public List<List<Vector2>> GenerateRoom(Voronoi voronoi, int size, string seed, out Vector2 roomOriginSite)
+    {
+        if (size < 1)
+        {
+            roomOriginSite = Vector2.zero;
+            return null;
+        }
+
+        //Select a random unused site from the voronoi diagram within the set borders
+        roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
+        int counter = 0;
+        while (IsOutOfBounds(roomOriginSite) || roomSites.Contains(roomOriginSite))
+        {
+            counter++;
+            roomOriginSite = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed + counter);
+            roomSites.Add(roomOriginSite);
+        }
+
         //Start building the final room from the cell at the coord
         List<LineSegment> baseRoom = voronoi.VoronoiBoundaryForSite(roomOriginSite);
         List<List<Vector2>> finalRoomVertices = new List<List<Vector2>>();
@@ -193,7 +293,10 @@ public class LayoutGenerator : MonoBehaviour
             //Start adding neighbors
             List<LineSegment> neighbor = null;
             if (i < neighborSites.Count)
+            {
                 neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
+                roomSites.Add(neighborSites[i]);
+            }
 
             //When no more neighbors are available, start adding the neighbors' neighbors
             else
@@ -224,6 +327,7 @@ public class LayoutGenerator : MonoBehaviour
                 {
                     neighbor = voronoi.VoronoiBoundaryForSite(newCoord);
                     neighborSites.Add(newCoord);
+                    roomSites.Add(newCoord);
                 }
                 else
                 {
@@ -235,8 +339,6 @@ public class LayoutGenerator : MonoBehaviour
             //Add the found available neighbor to the room
             finalRoomVertices.Add(LayoutUtil.GetVerticesFromLineSegments(neighbor));
         }
-        */
-        #endregion
 
         //Sort all room piece vertices clockwise for triangulation
         List<List<Vector2>> clockwiseVertices = new List<List<Vector2>>();
