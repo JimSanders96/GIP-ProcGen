@@ -21,7 +21,8 @@ public class LayoutGeneratorRevamp : MonoBehaviour
 
     private List<MissionNodeData> exploredMissionData;
     private List<Vector2> exploredGridCoords;
-    private List<Room> rooms;
+    private List<Room> missionRooms;
+    private List<Room> fleshRooms;
     private List<List<Vector2>> layout;
     private Voronoi voronoi;
 
@@ -42,22 +43,77 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         layout = new List<List<Vector2>>();
         exploredMissionData = new List<MissionNodeData>();
         exploredGridCoords = new List<Vector2>();
-        rooms = new List<Room>();
+        missionRooms = new List<Room>();
 
         // Recursively generate rooms from the mission graph
         GenerateRoomFromMissionNode((GraphNode<MissionNodeData>)mission.Nodes[0], Vector2.zero);
         Debug.Log("All rooms should have been generated now");
 
         // Normalize rooms
-        rooms = NormalizeRooms(rooms);
+        missionRooms = NormalizeRooms(missionRooms);
 
-        foreach (Room room in rooms)
-        {
+        // Generate random points around room sites to flesh out the voronoi
+        CreateFleshRooms();
+
+        // Generate the voronoi
+
+        // Get vertex sets from generated voronoi stuff
+
+        // DEBUG ROOMS
+        foreach (Room room in missionRooms)
             DebugRoom(room);
-        }
+
+        foreach (Room room in fleshRooms)
+            DebugRoom(room, false);
 
         return layout;
     }
+
+    /// <summary>
+    /// Returns all sites of every room (both mission and flesh)
+    /// </summary>
+    /// <returns></returns>
+    private List<Vector2> GetAllRoomSites()
+    {
+        List<Vector2> sites = new List<Vector2>();
+
+        foreach (Room room in missionRooms)
+            sites.AddRange(room.siteCoords);
+        foreach (Room room in fleshRooms)
+            sites.AddRange(room.siteCoords);
+
+        return sites;
+    }
+
+    /// <summary>
+    /// Create rooms in every grid tile that hasn't been used by a mission room to flesh out the voronoi
+    /// </summary>
+    private void CreateFleshRooms()
+    {
+        int maxX = 0;
+        int maxY = 0;
+
+        // Find the highest grid coordinates to find the upper right corner of the voronoi (lower left is 0,0)
+        foreach (Room room in missionRooms)
+        {
+            int gridX = (int)room.gridCoord.x;
+            int gridY = (int)room.gridCoord.y;
+
+            if (gridX > maxX)
+                maxX = gridX;
+            if (gridY > maxY)
+                maxY = gridY;
+        }
+
+        fleshRooms = new List<Room>();
+
+        // Create rooms around mission rooms to create a decent border in the voronoi object later on. (no need to filter out duplicate coords)
+        foreach (Room room in missionRooms)
+            foreach (Vector2 neighbor in GetAllAvailableNeighborGridCoords(room.gridCoord))
+                fleshRooms.Add(CreateRoom(neighbor, 3));
+
+    }
+
 
     /// <summary>
     /// Recursively generates rooms for the input node and all of its unexplored neighbors until all neighbors have been explored.
@@ -73,7 +129,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         // Create the room and store it
         Room room = CreateRoom(gridCoord, sitesPerGridTile);
         room.missionNodeData = data;
-        rooms.Add(room);
+        missionRooms.Add(room);
 
         // Mark the input gridCoord as explored if it hasn't already been done 
         //(should only happen for the first room, as neighboring coords are being marked before entering this function in the next section)
@@ -113,7 +169,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         // Init vars
         List<Vector2> points = new List<Vector2>();
         Room room = new Room();
-        if (rooms == null) rooms = new List<Room>();
+        if (missionRooms == null) missionRooms = new List<Room>();
 
         // Calculate point boundaries
         int minX, maxX, minY, maxY = 0;
@@ -130,7 +186,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         room.gridCoord = gridCoord;
         room.siteCoords = points;
 
-        Debug.Log("Created room at grid tile " + room.gridCoord);
+
         return room;
     }
 
@@ -140,6 +196,22 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     /// <param name="startCoord"></param>
     /// <returns></returns>
     private Vector2 GetAvailableNeighborGridCoord(Vector2 startCoord)
+    {
+        // Get all surrounding coords (filter out used coords)
+        List<Vector2> availableCoords = GetAllAvailableNeighborGridCoords(startCoord);
+
+        // Return (0,0) and error when no neighbors available
+        if (availableCoords.Count == 0)
+        {
+            Debug.LogError("No available neighbors for coord " + startCoord + "!");
+            return Vector2.zero;
+        }
+
+        // Return a random entry from the available coords
+        return RandomUtil.RandomElement(availableCoords.ToArray());
+    }
+
+    private List<Vector2> GetAllAvailableNeighborGridCoords(Vector2 startCoord)
     {
         // Get all surrounding coords (filter out used coords)
         List<Vector2> availableCoords = new List<Vector2>();
@@ -153,15 +225,8 @@ public class LayoutGeneratorRevamp : MonoBehaviour
             }
         }
 
-        // Return (0,0) and error when no neighbors available
-        if (availableCoords.Count == 0)
-        {
-            Debug.LogError("No available neighbors for coord " + startCoord + "!");
-            return Vector2.zero;
-        }
-
         // Return a random entry from the available coords
-        return RandomUtil.RandomElement(availableCoords.ToArray());
+        return availableCoords;
     }
 
     private void GetPointBoundaries(Vector2 gridCoord, out int minX, out int maxX, out int minY, out int maxY)
@@ -237,14 +302,15 @@ public class LayoutGeneratorRevamp : MonoBehaviour
 
 
     #region DEBUG
-    private void DebugRoom(Room room)
+    private void DebugRoom(Room room, bool placeMissionMarker = true)
     {
         foreach (Vector2 site in room.siteCoords)
         {
             Instantiate(debugCube, new Vector3(site.x, 0, site.y), Quaternion.identity);
         }
 
-        PlaceMissionMarker(room);
+        if (placeMissionMarker)
+            PlaceMissionMarker(room);
     }
 
     /// <summary>
