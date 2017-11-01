@@ -56,6 +56,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         CreateFleshRooms();
 
         // Generate the voronoi
+        voronoi = GenerateVoronoi(GetAllRoomSites());
 
         // Get vertex sets from generated voronoi stuff
 
@@ -67,6 +68,31 @@ public class LayoutGeneratorRevamp : MonoBehaviour
             DebugRoom(room, false);
 
         return layout;
+    }
+
+    /// <summary>
+    /// Generate a voronoi object based on a set of sites.
+    /// </summary>
+    /// <param name="sites"></param>
+    /// <returns></returns>
+    private Voronoi GenerateVoronoi(List<Vector2> sites)
+    {
+        int maxX = 0;
+        int maxY = 0;
+
+        // Find the highest grid coordinates to find the upper right corner of the voronoi (lower left is 0,0)
+        foreach (Vector2 site in sites)
+        {
+            int x = (int)site.x;
+            int y = (int)site.y;
+
+            if (x > maxX)
+                maxX = x;
+            if (y > maxY)
+                maxY = y;
+        }
+
+        return LayoutUtil.GenerateVoronoiObject(sites, maxX, maxY);
     }
 
     /// <summary>
@@ -90,27 +116,13 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     /// </summary>
     private void CreateFleshRooms()
     {
-        int maxX = 0;
-        int maxY = 0;
-
-        // Find the highest grid coordinates to find the upper right corner of the voronoi (lower left is 0,0)
-        foreach (Room room in missionRooms)
-        {
-            int gridX = (int)room.gridCoord.x;
-            int gridY = (int)room.gridCoord.y;
-
-            if (gridX > maxX)
-                maxX = gridX;
-            if (gridY > maxY)
-                maxY = gridY;
-        }
-
         fleshRooms = new List<Room>();
 
         // Create rooms around mission rooms to create a decent border in the voronoi object later on. (no need to filter out duplicate coords)
         foreach (Room room in missionRooms)
             foreach (Vector2 neighbor in GetAllAvailableNeighborGridCoords(room.gridCoord))
-                fleshRooms.Add(CreateRoom(neighbor, 3));
+                if (neighbor.x > 0 && neighbor.y > 0)
+                    fleshRooms.Add(CreateRoom(neighbor, 3));
 
     }
 
