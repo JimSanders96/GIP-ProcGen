@@ -7,6 +7,8 @@ using UnityEngine;
 /// </summary>
 public class MissionGraphGenerator : MonoBehaviour
 {
+    public bool linearGraph = true;
+
     [Tooltip("The amount of challenges (lock-key) in the mission.")]
     public int challengeAmount = 3;
 
@@ -27,26 +29,21 @@ public class MissionGraphGenerator : MonoBehaviour
     private List<GraphNode<MissionNodeData>> availableExplorationNodes = new List<GraphNode<MissionNodeData>>();
     private List<int> placedKeys = new List<int>();
 
-    private void Start()
-    {
-        //GenerateMissionGraph();
-    }
-
     public Graph<MissionNodeData> GenerateMissionGraph()
     {
         missionGraph = new Graph<MissionNodeData>();
 
-        // Create a soup of all nodes required in this graph
-        AddEntranceNode();
-        AddChallengeNodes();
-        AddExplorationNodes();
-        AddGoalNode();
+        // Create all nodes required in the graph. they will be stored in their respective variables.
+        CreateEntranceNode();
+        CreateChallengeNodes();
+        CreateExplorationNodes();
+        CreateGoalNode();
 
         // Connect the nodes in a way that makes sense
-        ConnectAllNodes();
+        CreateGraph(linearGraph);
 
         // Print the final graph for debugging
-        PrintMissionGraph();
+        // PrintMissionGraph();
 
         // Return the graph
         return missionGraph;
@@ -87,21 +84,19 @@ public class MissionGraphGenerator : MonoBehaviour
     /// <summary>
     /// Add the entrance node to the graph.
     /// </summary>
-    private void AddEntranceNode()
+    private void CreateEntranceNode()
     {
         MissionNodeData entrance = new MissionNodeData(MissionNodeTypes.ENTRANCE);
-        missionGraph.AddNode(entrance);
-        entranceNode = (GraphNode<MissionNodeData>)missionGraph.Nodes.FindByValue(entrance);
+        entranceNode = new GraphNode<MissionNodeData>(entrance);
     }
 
     /// <summary>
     /// Add the goal node to the graph.
     /// </summary>
-    private void AddGoalNode()
+    private void CreateGoalNode()
     {
         MissionNodeData goal = new MissionNodeData(MissionNodeTypes.GOAL);
-        missionGraph.AddNode(goal);
-        goalNode = (GraphNode<MissionNodeData>)missionGraph.Nodes.FindByValue(goal);
+        goalNode = new GraphNode<MissionNodeData>(goal);
 
         string debug = "";
         foreach (GraphNode<MissionNodeData> node in missionGraph.Nodes)
@@ -114,20 +109,18 @@ public class MissionGraphGenerator : MonoBehaviour
     /// <summary>
     /// Add all locks and keys to the graph
     /// </summary>
-    private void AddChallengeNodes()
+    private void CreateChallengeNodes()
     {
         // Generate a key and a lock
         for (int i = 0; i < challengeAmount; i++)
         {
             // Create a key node and assign a set of mechanics that will be used for the challenge the player will need to beat in order to get the key
             MissionNodeData keyData = new MissionNodeData(MissionNodeTypes.KEY, i, GetRandomMechanicsSet());
-            missionGraph.AddNode(keyData);
-            availableKeyNodes.Add((GraphNode<MissionNodeData>)missionGraph.Nodes.FindByValue(keyData));
+            availableKeyNodes.Add(new GraphNode<MissionNodeData>(keyData));
 
             // Create a lock node with the same key number
             MissionNodeData lockData = new MissionNodeData(MissionNodeTypes.LOCK, i);
-            missionGraph.AddNode(lockData);
-            availableLockNodes.Add((GraphNode<MissionNodeData>)missionGraph.Nodes.FindByValue(lockData));
+            availableLockNodes.Add(new GraphNode<MissionNodeData>(lockData));
         }
     }
 
@@ -146,31 +139,82 @@ public class MissionGraphGenerator : MonoBehaviour
         return mechanics;
     }
 
-    private void AddExplorationNodes()
+    private void CreateExplorationNodes()
     {
         for (int i = 0; i < explorationAmount; i++)
         {
             MissionNodeData data = new MissionNodeData(MissionNodeTypes.EXPLORATION);
-            missionGraph.AddNode(data);
-            availableExplorationNodes.Add((GraphNode<MissionNodeData>)missionGraph.Nodes.FindByValue(data));
+            availableExplorationNodes.Add(new GraphNode<MissionNodeData>(data));
         }
     }
 
-    private void ConnectAllNodes()
+    private void CreateGraph(bool linear = true)
     {
-        GraphNode<MissionNodeData> currentNode = entranceNode;
-        GraphNode<MissionNodeData> nextNode;
-
-        // Create a linear graph by simply connecting the current node with the next node.
-        while (GetAvailableNodeCount() > 0)
+        if (linear)
         {
-            nextNode = GetNextNode();
+            GraphNode<MissionNodeData> currentNode = entranceNode;
+            GraphNode<MissionNodeData> nextNode;
+            missionGraph.AddNode(currentNode);
+
+            // Create a linear graph by simply connecting the current node with the next node.
+            while (GetAvailableNodeCount() > 0)
+            {
+                nextNode = GetNextAvailableNode();
+                missionGraph.AddNode(nextNode);
+                missionGraph.AddUndirectedEdge(currentNode, nextNode, GetRandomEdgeWeight());
+                currentNode = nextNode;
+            }
+
+            nextNode = goalNode;
+            missionGraph.AddNode(nextNode);
             missionGraph.AddUndirectedEdge(currentNode, nextNode, GetRandomEdgeWeight());
-            currentNode = nextNode;
+
+        }
+        else
+        {
+            // Create first connection
+            missionGraph.AddNode(entranceNode);
+            GraphNode<MissionNodeData> nextNode = GetNextAvailableNode();
+            missionGraph.AddNode(nextNode);
+            missionGraph.AddUndirectedEdge(entranceNode, nextNode, GetRandomEdgeWeight());
+
+            // Create a non-linear graph by connecting the next nodes to a random node
+            while (GetAvailableNodeCount() > 0)
+            {
+                nextNode = GetNextAvailableNode();
+                missionGraph.AddNode(nextNode);
+                bool success = ConnectNodeRandomly(nextNode);
+                Debug.Log(success);
+            }
+
+            // Randomly connect the goal node
+            missionGraph.AddNode(goalNode);
+            ConnectNodeRandomly(goalNode);
+        }
+    }
+
+    private bool ConnectNodeRandomly(GraphNode<MissionNodeData> node)
+    {
+        int attempts = 0;
+        // Pick a random node that has no more than 3 neighbors
+        GraphNode<MissionNodeData> randomNode = (GraphNode<MissionNodeData>)missionGraph.Nodes[Random.Range(0, missionGraph.Nodes.Count)];
+        while (randomNode.Neighbors.Count >= 3 && attempts < 100)
+        {
+            randomNode = (GraphNode<MissionNodeData>)missionGraph.Nodes[Random.Range(0, missionGraph.Nodes.Count)];
+            attempts++;
         }
 
-        nextNode = goalNode;
-        missionGraph.AddUndirectedEdge(currentNode, nextNode, GetRandomEdgeWeight());
+        // Fail generation when max attempts reached
+        if (attempts == 100)
+        {
+            Debug.LogError("Max generation attempts reached!");
+            return false;
+        }
+
+        // Connect the node
+        missionGraph.AddUndirectedEdge(randomNode, node, GetRandomEdgeWeight());
+        return true;
+
     }
 
     /// <summary>
@@ -196,7 +240,7 @@ public class MissionGraphGenerator : MonoBehaviour
     /// Get a node from one of the 3 'available' node pools. The returned node will be marked as being placed in the graph.
     /// </summary>
     /// <returns></returns>
-    private GraphNode<MissionNodeData> GetNextNode()
+    private GraphNode<MissionNodeData> GetNextAvailableNode()
     {
         GraphNode<MissionNodeData> node = null;
         List<GraphNode<MissionNodeData>> nodeList = null;

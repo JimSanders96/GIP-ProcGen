@@ -259,52 +259,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1248906108
-GameObject:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
-  m_Component:
-  - component: {fileID: 1248906110}
-  - component: {fileID: 1248906109}
-  m_Layer: 0
-  m_Name: LayoutGeneratorRevamp
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &1248906109
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1248906108}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c1b9d33890eb5f47a32a85f38641bd8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  missionMarker: {fileID: 1515845516575238, guid: ba6f4a5979ab8374a9ff7a4d76777dc9,
-    type: 2}
-  debugCube: {fileID: 1611310941621056, guid: c81924b03a6b2024f818654020c38679, type: 2}
-  debugCube2: {fileID: 0}
-  gridSize: 50
-  sitesPerGridTile: 0
---- !u!4 &1248906110
-Transform:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1248906108}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 179.94846, y: 115.31198, z: -42.504665}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1411520723
 Prefab:
   m_ObjectHideFlags: 0
@@ -346,10 +300,14 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 114138948546681024, guid: 383890fc3460478419c1a6722043e130,
         type: 2}
-      propertyPath: debugCube2
-      value: 
-      objectReference: {fileID: 1611310941621056, guid: 1287f5aa017e98147867f3853231f52c,
+      propertyPath: sitesPerGridTile
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 114409566924363042, guid: 383890fc3460478419c1a6722043e130,
         type: 2}
+      propertyPath: linearGraph
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 383890fc3460478419c1a6722043e130, type: 2}
   m_IsPrefabParent: 0

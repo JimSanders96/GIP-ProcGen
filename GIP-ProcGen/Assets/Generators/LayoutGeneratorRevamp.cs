@@ -458,21 +458,21 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         if (layout == null)
             return;
         Gizmos.color = Color.blue;
-        foreach (List<Vector2> piece in layout)
+        foreach (List<Vector2> vertexSet in layout)
         {
-            for (int i = 0; i < piece.Count; i++)
+            for (int i = 0; i < vertexSet.Count; i++)
             {
                 Vector2 left;
                 Vector2 right;
-                if (i + 1 < piece.Count)
+                if (i + 1 < vertexSet.Count)
                 {
-                    left = piece[i];
-                    right = piece[i + 1];
+                    left = vertexSet[i];
+                    right = vertexSet[i + 1];
                 }
                 else
                 {
-                    left = piece[i];
-                    right = piece[0];
+                    left = vertexSet[i];
+                    right = vertexSet[0];
                 }
                 Gizmos.DrawLine(left, right);
             }
