@@ -33,11 +33,14 @@ public class LayoutGenerator : MonoBehaviour
     private List<Vector2> pathSites;
     private List<Vector2> roomSites;
     private List<List<Vector2>> _layout;
+    private Dictionary<GraphNode<MissionNodeData>, List<List<Vector2>>> nodeToRoomMap;
     private float maxCoordX = 0;
     private float minCoordX = 0;
     private float maxCoordY = 0;
     private float minCoordY = 0;
     private List<Vector2> outOfBoundsCoordinates;
+    private int attempts = 0;
+    private int maxAttempts = 5;
 
     /// <summary>
     /// Return the same random every time this is called
@@ -46,7 +49,7 @@ public class LayoutGenerator : MonoBehaviour
     private System.Random GetRandom()
     {
         if (random == null)
-            random = new System.Random(randomSeed.GetHashCode());
+            random = new System.Random(seed.GetHashCode());
         return random;
     }
 
@@ -86,6 +89,7 @@ public class LayoutGenerator : MonoBehaviour
         minCoordY = height * borderPercentage * 0.5f;
         outOfBoundsCoordinates = new List<Vector2>();
         List<List<Vector2>> layout = new List<List<Vector2>>();
+        nodeToRoomMap = new Dictionary<GraphNode<MissionNodeData>, List<List<Vector2>>>();
 
         // Randomize seed when needed
         if (randomSeed)
@@ -97,39 +101,60 @@ public class LayoutGenerator : MonoBehaviour
             voronoi = LayoutUtil.RelaxVoronoi(voronoi);
         }
 
-        // Generate rooms based on the mission graph
-        bool endReached = false;
-        bool foundNextNode = false;
-        GraphNode<MissionNodeData> nextNode = (GraphNode<MissionNodeData>)missionGraph.Nodes[0];
-        List<GraphNode<MissionNodeData>> checkedNodes = new List<GraphNode<MissionNodeData>>();
-        int count = 0;
-
-        while (!endReached)
+        //TODO
+        bool success = false;
+        while (!success && attempts < maxAttempts)
         {
-            foundNextNode = false;
-            count++;
+            bool endReached = false;
+            bool foundNextNode = false;
+            GraphNode<MissionNodeData> nextNode = (GraphNode<MissionNodeData>) missionGraph.Nodes[0];
+            List<GraphNode<MissionNodeData>> checkedNodes = new List<GraphNode<MissionNodeData>>();
+            int count = 0;
 
-            // Generate a room for the current node in the graph
-            Vector2 originSite;
-            List<List<Vector2>> room = GenerateRoom(voronoi, roomSize, seed + count, out originSite);
-            layout.AddRange(room);
-            PlaceMissionMarker(originSite, nextNode.Value);
-            checkedNodes.Add(nextNode);
-
-            // Since the graph is currently always linear (each node has only 1 or 2 connections), debug it linearly
-            foreach (GraphNode<MissionNodeData> neighbor in nextNode.Neighbors)
+            while (!endReached)
             {
-                if (!checkedNodes.Contains(neighbor))
-                {
-                    nextNode = neighbor;
-                    foundNextNode = true;
-                    break;
-                }
-            }
+                foundNextNode = false;
 
-            // Mark the end of the graph
-            if (!foundNextNode)
-                endReached = true;
+                // Mark next node as checked
+                checkedNodes.Add(nextNode);
+
+                // Generate room for node
+                if(nodeToRoomMap.Count == 0)
+                {
+                    Vector2 roomOriginSite;
+                    List<List<Vector2>> room =  GenerateRoom(voronoi, roomSize, seed + attempts + nodeToRoomMap.Count, out roomOriginSite);
+                    roomOriginSites.Add(roomOriginSite);
+                    nodeToRoomMap.Add(nextNode, room);
+                }
+                else
+                {
+
+                }
+
+                // increase counter
+                count++;
+
+                // Since the graph is currently always linear (each node has only 1 or 2 connections), iterate it linearly
+                foreach (GraphNode<MissionNodeData> neighbor in nextNode.Neighbors)
+                {
+                    if (!checkedNodes.Contains(neighbor))
+                    {
+                        nextNode = neighbor;
+                        foundNextNode = true;
+                        break;
+                    }
+                }
+
+                // Mark the end of the graph
+                if (!foundNextNode)
+                    endReached = true;
+            }
+        }
+
+        if (!success)
+        {
+            Debug.Log("Layout generation failed.");
+            return null;
         }
 
         _layout = layout;
@@ -147,6 +172,7 @@ public class LayoutGenerator : MonoBehaviour
         marker.GetComponent<MissionMarker>().Init(data);
     }
 
+    #region Radius based generation 
     /// <summary>
     /// Generate the level layout based on a voronoi diagram and level parameters.
     /// </summary>
@@ -252,6 +278,7 @@ public class LayoutGenerator : MonoBehaviour
 
         return clockwiseVertices;
     }
+    #endregion
 
     /// <summary>
     /// Generate a room by selecting a random cell from a given voronoi grid and adding the surrounding cells
@@ -290,9 +317,9 @@ public class LayoutGenerator : MonoBehaviour
         //NOTE: Currently adds duplicate vertices to the final room in order to be able to triangulate each room-piece seperately later on.
         for (int i = 0; i < size - 1; i++)
         {
-            //Start adding neighbors
+            //Start adding unused neighbors
             List<LineSegment> neighbor = null;
-            if (i < neighborSites.Count)
+            if (i < neighborSites.Count && !roomSites.Contains(neighborSites[i]))
             {
                 neighbor = voronoi.VoronoiBoundaryForSite(neighborSites[i]);
                 roomSites.Add(neighborSites[i]);
@@ -310,7 +337,7 @@ public class LayoutGenerator : MonoBehaviour
                     List<Vector2> neighbors = voronoi.NeighborSitesForSite(site);
                     foreach (Vector2 n in neighbors)
                     {
-                        if (n != roomOriginSite && !neighborSites.Contains(n))
+                        if (n != roomOriginSite && !neighborSites.Contains(n) && !roomSites.Contains(n))
                         {
                             newCoord = n;
                             found = true;
@@ -349,7 +376,6 @@ public class LayoutGenerator : MonoBehaviour
 
         return clockwiseVertices;
     }
-
 
     #region Debug
 

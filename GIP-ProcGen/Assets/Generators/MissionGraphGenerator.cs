@@ -52,7 +52,6 @@ public class MissionGraphGenerator : MonoBehaviour
         return missionGraph;
     }
 
-    // SOMEWHERE IN HERE IS A BUG THAT CAUSES IT TO PRINT THE GOAL NODE TWICE AND SKIP THE FINAL LOCK
     public void PrintMissionGraph()
     {
         bool endReached = false;
