@@ -141,6 +141,10 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         return sites;
     }
 
+    /// <summary>
+    /// Returns all grid coordinates that do not exist within the exploredGridTiles bounds (using the max x and y coords from those)
+    /// </summary>
+    /// <returns></returns>
     private List<Vector2> GetUnusedGridCoords()
     {
         int maxX = 0;
@@ -183,7 +187,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         // Create rooms around mission rooms to create a decent border in the voronoi object later on. (no need to filter out duplicate coords)
         foreach (Room room in missionRooms)
             foreach (Vector2 neighbor in GetAllAvailableNeighborGridCoords(room.gridCoord))
-                fleshRooms.Add(CreateRoom(neighbor, 3));
+                fleshRooms.Add(CreateRoom(neighbor, sitesPerGridTile));
 
     }
 
@@ -425,7 +429,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     private void PlaceMissionMarker(Room room)
     {
         Vector2 roomOrigin = VectorUtil.FindOrigin(room.siteCoords);
-        GameObject marker = Instantiate(missionMarker, new Vector3(roomOrigin.x, 0, roomOrigin.y), Quaternion.identity);
+        GameObject marker = Instantiate(missionMarker, roomOrigin, Quaternion.identity);
         marker.GetComponent<MissionMarker>().Init(room.missionNodeData);
     }
 
