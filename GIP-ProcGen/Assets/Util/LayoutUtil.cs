@@ -52,7 +52,7 @@ public static class LayoutUtil
     }
 
     /// <summary>
-    /// Generates a voronoi object based on the width and height parameters of this class.
+    /// Generates a voronoi object based on the width and height parameters.
     /// </summary>
     /// <returns></returns>
     public static Voronoi GenerateVoronoiObject(int pointCount, int width, int height, System.Random random)
@@ -70,6 +70,21 @@ public static class LayoutUtil
         }
 
         return new Voronoi(points, colors, new Rect(0, 0, width, height));
+    }
+
+    /// <summary>
+    /// Generates a voronoi object based on predefined sites.
+    /// </summary>
+    /// <returns></returns>
+    public static Voronoi GenerateVoronoiObject(List<Vector2> sites, int width, int height)
+    {
+        List<uint> colors = new List<uint>();
+        for (int i = 0; i < sites.Count; i++)
+        {
+            colors.Add(0);
+        }
+
+        return new Voronoi(sites, colors, new Rect(0, 0, width, height));
     }
 
     /// <summary>
