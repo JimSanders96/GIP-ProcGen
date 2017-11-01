@@ -41,10 +41,10 @@ public class LevelGenerator : MonoBehaviour
             Debug.LogError("Could not generate layout!");
             return;
         }
-        geometryGenerator.GenerateMesh(layout);
         */
         missionGraph = missionGraphGenerator.GenerateMissionGraph();
-        layoutGeneratorRevamp.GenerateLayout(missionGraph);
+        List<List<Vector2>> layout = layoutGeneratorRevamp.GenerateLayout(missionGraph);
+        geometryGenerator.GenerateMesh(layout);
 
     }
 }

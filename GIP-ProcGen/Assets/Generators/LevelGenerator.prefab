@@ -70,6 +70,7 @@ MonoBehaviour:
   missionMarker: {fileID: 1515845516575238, guid: ba6f4a5979ab8374a9ff7a4d76777dc9,
     type: 2}
   debugCube: {fileID: 1611310941621056, guid: c81924b03a6b2024f818654020c38679, type: 2}
+  debugCube2: {fileID: 1611310941621056, guid: 1287f5aa017e98147867f3853231f52c, type: 2}
   gridSize: 50
   sitesPerGridTile: 5
 --- !u!114 &114369272124265192

@@ -15,6 +15,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
 
     public GameObject missionMarker;
     public GameObject debugCube;
+    public GameObject debugCube2;
     [Range(10, 50)]
     public int gridSize = 50;
     public int sitesPerGridTile;
@@ -29,7 +30,8 @@ public class LayoutGeneratorRevamp : MonoBehaviour
 
     private void Awake()
     {
-
+        // FOCUS SCENE VIEW
+        UnityEditor.SceneView.FocusWindowIfItsOpen(typeof(UnityEditor.SceneView));
     }
 
     /// <summary>
@@ -49,25 +51,52 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         GenerateRoomFromMissionNode((GraphNode<MissionNodeData>)mission.Nodes[0], Vector2.zero);
         Debug.Log("All rooms should have been generated now");
 
-        // Normalize rooms
-        missionRooms = NormalizeRooms(missionRooms);
-
-        // Generate random points around room sites to flesh out the voronoi
+        // Generate random rooms around room sites to flesh out the voronoi
         CreateFleshRooms();
 
+        // Normalize rooms before voronoi generation
+        NormalizeRooms();
+
         // Generate the voronoi
-        voronoi = GenerateVoronoi(GetAllRoomSites());
+        voronoi = GenerateVoronoi(GetVoronoiSites());
 
         // Get vertex sets from generated voronoi stuff
+        layout = GetLayoutVertices(missionRooms, voronoi);
 
         // DEBUG ROOMS
         foreach (Room room in missionRooms)
-            DebugRoom(room);
-
+            DebugRoom(room, 0);
         foreach (Room room in fleshRooms)
-            DebugRoom(room, false);
+            DebugRoom(room, 1, false);
 
         return layout;
+    }
+
+    /// <summary>
+    /// Returns a set of vertex sets belonging to the mission rooms in a voronoi object.
+    /// ROOM SITES MUST APPEAR IN THE VORONOI OR THE UNIVERSE WILL COLLAPSE
+    /// </summary>
+    /// <param name="missionRooms"></param>
+    /// <param name="voronoi"></param>
+    /// <returns></returns>
+    private List<List<Vector2>> GetLayoutVertices(List<Room> missionRooms, Voronoi voronoi)
+    {
+        // Get all vertices belonging to the room sites
+        List<List<Vector2>> vertexSets = new List<List<Vector2>>();
+        foreach (Room room in missionRooms)
+        {
+            List<List<Vector2>> vertices = LayoutUtil.GetVerticesForSites(voronoi, room.siteCoords);
+            vertexSets.AddRange(vertices);
+        }
+
+        //Sort all room piece vertices clockwise for triangulation
+        List<List<Vector2>> clockwiseVertices = new List<List<Vector2>>();
+        foreach (List<Vector2> vertexSet in vertexSets)
+        {
+            clockwiseVertices.Add(VectorUtil.SortClockwise(vertexSet));
+        }
+
+        return clockwiseVertices;
     }
 
     /// <summary>
@@ -99,7 +128,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     /// Returns all sites of every room (both mission and flesh)
     /// </summary>
     /// <returns></returns>
-    private List<Vector2> GetAllRoomSites()
+    private List<Vector2> GetVoronoiSites()
     {
         List<Vector2> sites = new List<Vector2>();
 
@@ -107,8 +136,41 @@ public class LayoutGeneratorRevamp : MonoBehaviour
             sites.AddRange(room.siteCoords);
         foreach (Room room in fleshRooms)
             sites.AddRange(room.siteCoords);
+        //sites.AddRange(GetUnusedGridCoords());
 
         return sites;
+    }
+
+    private List<Vector2> GetUnusedGridCoords()
+    {
+        int maxX = 0;
+        int maxY = 0;
+
+        // Find the highest grid coordinates to find the upper right corner of the voronoi (lower left is 0,0)
+        foreach (Vector2 site in exploredGridCoords)
+        {
+            int x = (int)site.x;
+            int y = (int)site.y;
+
+            if (x > maxX)
+                maxX = x;
+            if (y > maxY)
+                maxY = y;
+        }
+
+        // Find all grid coords that havent been explored
+        List<Vector2> unusedGridCoords = new List<Vector2>();
+        for (int x = 0; x < maxX + 1; x++)
+        {
+            for (int y = 0; y < maxY + 1; y++)
+            {
+                Vector2 coord = new Vector2(x, y);
+                if (!exploredGridCoords.Contains(coord))
+                    unusedGridCoords.Add(coord);
+            }
+        }
+        Debug.Log("lalala");
+        return unusedGridCoords;
     }
 
     /// <summary>
@@ -121,8 +183,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         // Create rooms around mission rooms to create a decent border in the voronoi object later on. (no need to filter out duplicate coords)
         foreach (Room room in missionRooms)
             foreach (Vector2 neighbor in GetAllAvailableNeighborGridCoords(room.gridCoord))
-                if (neighbor.x > 0 && neighbor.y > 0)
-                    fleshRooms.Add(CreateRoom(neighbor, 3));
+                fleshRooms.Add(CreateRoom(neighbor, 3));
 
     }
 
@@ -223,6 +284,12 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         return RandomUtil.RandomElement(availableCoords.ToArray());
     }
 
+    /// <summary>
+    /// Get a list of all coordinates surrounding the startCoord that havent been explored yet.
+    /// Limited to north east south west
+    /// </summary>
+    /// <param name="startCoord"></param>
+    /// <returns></returns>
     private List<Vector2> GetAllAvailableNeighborGridCoords(Vector2 startCoord)
     {
         // Get all surrounding coords (filter out used coords)
@@ -231,9 +298,14 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         {
             for (int y = (int)startCoord.y - 1; y < (int)startCoord.y + 2; y++)
             {
-                Vector2 coord = new Vector2(x, y);
-                if (coord != startCoord && !GridCoordIsTaken(coord))
-                    availableCoords.Add(coord);
+                // Limit search to north east south west
+                if (x == (int)startCoord.x || y == (int)startCoord.y)
+                {
+                    Vector2 coord = new Vector2(x, y);
+                    if (coord != startCoord && !GridCoordIsTaken(coord))
+                        availableCoords.Add(coord);
+                }
+
             }
         }
 
@@ -247,7 +319,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         minY = ((int)gridCoord.y * gridSize);
         maxX = ((int)(gridCoord.x + 1) * gridSize);
         maxY = ((int)(gridCoord.y + 1) * gridSize);
-        Debug.Log("Boundaries for gridCoord " + gridCoord + ": " + "minX: " + minX + " | minY: " + minY + " | maxX: " + maxX + " | maxY: " + maxY);
+        //Debug.Log("Boundaries for gridCoord " + gridCoord + ": " + "minX: " + minX + " | minY: " + minY + " | maxX: " + maxX + " | maxY: " + maxY);
     }
 
     /// <summary>
@@ -264,14 +336,16 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     /// Finds the lowest X and Y site coordinates of all rooms and moves all sites so the lowest number is 0 or greater (required for voronoi creation).
     /// </summary>
     /// <returns></returns>
-    private List<Room> NormalizeRooms(List<Room> rooms)
+    private void NormalizeRooms()
     {
-        List<Room> normalizedRooms = new List<Room>();
+        List<Room> normalizedMissionRooms = new List<Room>();
+        List<Room> normalizedFleshRooms = new List<Room>();
+
         int lowestX = 0;
         int lowestY = 0;
 
         // Find the lowest grid coordinates (because sites are places in an area north and east of the grid coord).
-        foreach (Room room in rooms)
+        foreach (Room room in fleshRooms)
         {
             int gridX = (int)room.gridCoord.x;
             int gridY = (int)room.gridCoord.y;
@@ -282,12 +356,8 @@ public class LayoutGeneratorRevamp : MonoBehaviour
                 lowestY = gridY;
         }
 
-        // Return original set if no adjustment is needed
-        if (lowestX >= 0 && lowestY >= 0)
-            return rooms;
-
-        // Adjust coordinates
-        foreach (Room room in rooms)
+        // Adjust coordinates for mission rooms
+        foreach (Room room in missionRooms)
         {
             Room normalizedRoom = new Room();
 
@@ -304,21 +374,43 @@ public class LayoutGeneratorRevamp : MonoBehaviour
             normalizedRoom.missionNodeData = room.missionNodeData;
 
             // add the room to the new list
-            normalizedRooms.Add(normalizedRoom);
+            normalizedMissionRooms.Add(normalizedRoom);
         }
 
+        // Adjust coordinates for flesh rooms
+        foreach (Room room in fleshRooms)
+        {
+            Room normalizedRoom = new Room();
 
-        return normalizedRooms;
+            // adjust grid coord
+            normalizedRoom.gridCoord = new Vector2(room.gridCoord.x - lowestX, room.gridCoord.y - lowestY);
+
+            // adjust site coords
+            List<Vector2> adjustedSites = new List<Vector2>();
+            foreach (Vector2 site in room.siteCoords)
+                adjustedSites.Add(new Vector2(site.x - (lowestX * gridSize), site.y - (lowestY * gridSize)));
+            normalizedRoom.siteCoords = adjustedSites;
+
+            // make sure the node data remains the same
+            normalizedRoom.missionNodeData = room.missionNodeData;
+
+            // add the room to the new list
+            normalizedFleshRooms.Add(normalizedRoom);
+        }
+
+        // Set actual rooms to normalized rooms.
+        missionRooms = normalizedMissionRooms;
+        fleshRooms = normalizedFleshRooms;
     }
 
 
 
     #region DEBUG
-    private void DebugRoom(Room room, bool placeMissionMarker = true)
+    private void DebugRoom(Room room, int type, bool placeMissionMarker = true)
     {
         foreach (Vector2 site in room.siteCoords)
         {
-            Instantiate(debugCube, new Vector3(site.x, 0, site.y), Quaternion.identity);
+            Instantiate(type == 0 ? debugCube : debugCube2, new Vector3(site.x, 0, site.y), Quaternion.identity);
         }
 
         if (placeMissionMarker)
@@ -381,13 +473,6 @@ public class LayoutGeneratorRevamp : MonoBehaviour
                 Gizmos.DrawLine(left, right);
             }
         }
-    }
-
-    private void DrawRandomVoronoiCell(string seed)
-    {
-        Vector2 coord = RandomUtil.RandomElement(voronoi.SiteCoords(), false, seed);
-        List<LineSegment> cell = voronoi.VoronoiBoundaryForSite(coord);
-        DrawLineSegments(cell, Color.blue);
     }
 
     private void DrawVoronoi()

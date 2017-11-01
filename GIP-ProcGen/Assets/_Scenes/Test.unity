@@ -289,6 +289,7 @@ MonoBehaviour:
   missionMarker: {fileID: 1515845516575238, guid: ba6f4a5979ab8374a9ff7a4d76777dc9,
     type: 2}
   debugCube: {fileID: 1611310941621056, guid: c81924b03a6b2024f818654020c38679, type: 2}
+  debugCube2: {fileID: 0}
   gridSize: 50
   sitesPerGridTile: 0
 --- !u!4 &1248906110
@@ -343,6 +344,12 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 114138948546681024, guid: 383890fc3460478419c1a6722043e130,
+        type: 2}
+      propertyPath: debugCube2
+      value: 
+      objectReference: {fileID: 1611310941621056, guid: 1287f5aa017e98147867f3853231f52c,
+        type: 2}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 383890fc3460478419c1a6722043e130, type: 2}
   m_IsPrefabParent: 0
