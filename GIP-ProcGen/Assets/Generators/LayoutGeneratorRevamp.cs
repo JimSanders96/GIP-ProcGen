@@ -4,130 +4,147 @@ using UnityEngine;
 
 public class LayoutGeneratorRevamp : MonoBehaviour
 {
-
-    public int gridSize = 50;
-    [Range(0.1f, 0.5f)]
-    public float gridTileBorderThickness = 0.3f;
-    public int gridWidth;
-    public int gridHeight;
-    public string seed;
-
-    private System.Random random;
-    private int[][] grid;
-    private Dictionary<Vector2, List<Vector2>> gridToSites; // use grid coordinate to lookup corresponding room sites
-
-
-    /// <summary>
-    /// Return the same random every time this is called
-    /// </summary>
-    /// <returns></returns>
-    private System.Random GetRandom()
+    public struct Room
     {
-        if (random == null)
-            random = new System.Random(seed.GetHashCode());
-        return random;
+        public Vector2 gridCoord;
+        public List<Vector2> siteCoords;
+        public MissionNodeData missionNodeData;
     }
+
+    public GameObject missionMarker;
+    public GameObject debugCube;
+    [Range(10, 50)]
+    public int gridSize = 50;
+
+    private List<Room> rooms;
 
     private void Awake()
     {
-
+        rooms = new List<Room>();
+        StartCoroutine(Test());
     }
 
-    private void InitGrid()
+
+    private IEnumerator Test()
     {
-        for (int x = 0; x < gridWidth; x++)
+        Debug.Log("Starting test routine");
+        while (rooms.Count < 5)
         {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                grid[x][y] = 0;
-            }
+            Vector2 coord = rooms.Count == 0 ? Vector2.zero : GetAvailableNeighborGridCoord(rooms[rooms.Count - 1].gridCoord);
+            Room room = CreateRoom(coord, 5);
+            DebugRoom(room);
+            yield return new WaitForSeconds(1);
         }
     }
 
-    public bool CreateLinkedRoom(Vector2 startGridCoord, int pointCount, out Vector2 gridCoord, out List<Vector2> sites)
+    /// <summary>
+    /// Generate a layout based on a mission graph.
+    /// </summary>
+    /// <param name="mission"></param>
+    /// <returns></returns>
+    public List<List<Vector2>> GenerateLayout(Graph<MissionNodeData> mission)
     {
-        // Get available neighbor coord
-        Vector2 coord = Vector2.zero;
-        bool success = GetAvailableNeighborGridCoord(startGridCoord, out coord);
+        // Init vars
+        List<List<Vector2>> layout = new List<List<Vector2>>();
+        rooms = new List<Room>();
 
-        // Fail if no neighboring site found
-        if (!success)
-        {
-            sites = null;
-            gridCoord = Vector2.zero;            
-        }
-        else
-        {
-            // Create room & assign out vars
-            sites = CreateRoom(coord, pointCount);
-            gridCoord = coord;
-        }
-        
-        return success;
-    }
-
-    public void CreateRandomRoom(int pointCount, out Vector2 gridCoord, out List<Vector2> sites)
-    {
-        // Get a random tile from the grid
-        int x = GetRandom().Next(0, gridWidth - 1);
-        int y = GetRandom().Next(0, gridHeight - 1);
-        Vector2 coord = new Vector2(x, y);        
-
-        // Create the room & assign out vars
-        sites = CreateRoom(coord,pointCount);
-        gridCoord = coord;
+        return layout;
     }
 
     /// <summary>
     /// Returns a list of points, representing the voronoi sites of a room.
+    /// Automatically puts it in the rooms list.
     /// </summary>
     /// <param name="gridCoord"></param>
     /// <param name="pointCount"></param>
     /// <returns></returns>
-    private List<Vector2> CreateRoom(Vector2 gridCoord, int pointCount)
+    private Room CreateRoom(Vector2 gridCoord, int pointsPerTile)
     {
+        // Init vars
         List<Vector2> points = new List<Vector2>();
+        Room room = new Room();
+        if (rooms == null) rooms = new List<Room>();
 
         // Calculate point boundaries
-        int minX = 0;
-        int maxX = 0;
-        int minY = 0;
-        int maxY = 0;
+        int minX, maxX, minY, maxY = 0;
         GetPointBoundaries(gridCoord, out minX, out maxX, out minY, out maxY);
 
         // Randomly distribute points across the selected grid tile
-        for (int i = 0; i < pointCount; i++)
+        for (int i = 0; i < pointsPerTile; i++)
         {
             Vector2 point = new Vector2(Random.Range(minX, maxX), Random.Range(minY, maxY));
             points.Add(point);
         }
-        return points;
+
+        // Assign vars to room
+        room.gridCoord = gridCoord;
+        room.siteCoords = points;
+
+        // Keep track of created rooms
+        rooms.Add(room);
+
+        Debug.Log("Created room at grid tile " + room.gridCoord);
+        return room;
+    }
+
+    private Vector2 GetAvailableNeighborGridCoord(Vector2 startCoord)
+    {
+        // Get all surrounding coords (filter out used coords)
+        List<Vector2> availableCoords = new List<Vector2>();
+        for (int x = (int)startCoord.x - 1; x < (int)startCoord.x + 1; x++)
+        {
+            for (int y = (int)startCoord.y - 1; y < (int)startCoord.y + 1; y++)
+            {
+                Vector2 coord = new Vector2(x, y);
+                if (coord != startCoord && !GridCoordIsTaken(coord))
+                    availableCoords.Add(coord);
+            }
+        }
+
+        // Shuffle list & return first entry
+        System.Random random = new System.Random(System.DateTime.Now.GetHashCode());
+        random.Shuffle(availableCoords);
+        return availableCoords[0];
     }
 
     private void GetPointBoundaries(Vector2 gridCoord, out int minX, out int maxX, out int minY, out int maxY)
     {
-        minX = ((int)gridCoord.x * gridSize) + (int)(gridSize * gridTileBorderThickness * 0.5f);
-        minY = ((int)gridCoord.y * gridSize) + (int)(gridSize * gridTileBorderThickness * 0.5f);
-        maxX = ((int)gridCoord.x * gridSize + 1) - (int)(gridSize * gridTileBorderThickness * 0.5f);
-        maxY = ((int)gridCoord.y * gridSize + 1) - (int)(gridSize * gridTileBorderThickness * 0.5f);
+        minX = ((int)gridCoord.x * gridSize);
+        minY = ((int)gridCoord.y * gridSize);
+        maxX = ((int)(gridCoord.x + 1) * gridSize);
+        maxY = ((int)(gridCoord.y + 1) * gridSize);
+        Debug.Log("Boundaries for gridCoord " + gridCoord + ": " + "minX: " + minX + " | minY: " + minY + " | maxX: " + maxX + " | maxY: " + maxY);
     }
 
-    private void MarkGridCoordAsTaken(Vector2 gridCoord)
+    /// <summary>
+    /// Returns true if the given gridCoord exists as the gridCoord of one of the rooms.
+    /// </summary>
+    /// <param name="gridCoord"></param>
+    /// <returns></returns>
+    private bool GridCoordIsTaken(Vector2 gridCoord)
     {
-        grid[(int)gridCoord.x][(int)gridCoord.y] = 1;
+        foreach (Room room in rooms)
+            if (room.gridCoord == gridCoord)
+                return true;
+        return false;
     }
 
-    // TODO                     TODO
-    private bool GetAvailableNeighborGridCoord(Vector2 gridCoord, out Vector2 neighborCoord)
+    /// <summary>
+    /// Places a mission marker at the site location, displaying the data provided.
+    /// </summary>
+    /// <param name="site"></param>
+    /// <param name="data"></param>
+    private void PlaceMissionMarker(Vector2 site, MissionNodeData data)
     {
-        bool success = false;
+        GameObject marker = Instantiate(missionMarker, site, Quaternion.identity);
+        marker.GetComponent<MissionMarker>().Init(data);
+    }
 
-        for (int x = (int)gridCoord.x - 1; x < (int)gridCoord.x + 1; x++)
+    private void DebugRoom(Room room)
+    {
+        foreach (Vector2 site in room.siteCoords)
         {
-            // TODO
+            Instantiate(debugCube, new Vector3(site.x, 0, site.y), Quaternion.identity);
         }
-
-        neighborCoord = Vector2.zero;
-        return success;
     }
 }

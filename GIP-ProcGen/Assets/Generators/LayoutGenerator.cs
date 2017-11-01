@@ -7,7 +7,7 @@ using UnityEngine;
 public class LayoutGenerator : MonoBehaviour
 {
 
-    public GameObject MissionMarker;
+    public GameObject missionMarker;
 
     [SerializeField]
     private string seed = "lelele";
@@ -168,7 +168,7 @@ public class LayoutGenerator : MonoBehaviour
     /// <param name="data"></param>
     private void PlaceMissionMarker(Vector2 site, MissionNodeData data)
     {
-        GameObject marker = Instantiate(MissionMarker, site, Quaternion.identity);
+        GameObject marker = Instantiate(missionMarker, site, Quaternion.identity);
         marker.GetComponent<MissionMarker>().Init(data);
     }
 
