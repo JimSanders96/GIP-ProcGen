@@ -96,14 +96,7 @@ public class MissionGraphGenerator : MonoBehaviour
     private void CreateGoalNode()
     {
         MissionNodeData goal = new MissionNodeData(MissionNodeTypes.GOAL);
-        goalNode = new GraphNode<MissionNodeData>(goal);
-
-        string debug = "";
-        foreach (GraphNode<MissionNodeData> node in missionGraph.Nodes)
-        {
-            debug += node.Value.type + ", ";
-        }
-        Debug.Log("These nodes appear in the graph: " + debug);
+        goalNode = new GraphNode<MissionNodeData>(goal);       
     }
 
     /// <summary>
@@ -183,8 +176,7 @@ public class MissionGraphGenerator : MonoBehaviour
             {
                 nextNode = GetNextAvailableNode();
                 missionGraph.AddNode(nextNode);
-                bool success = ConnectNodeRandomly(nextNode);
-                Debug.Log(success);
+                ConnectNodeRandomly(nextNode);
             }
 
             // Randomly connect the goal node

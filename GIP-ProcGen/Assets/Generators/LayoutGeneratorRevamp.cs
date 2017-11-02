@@ -41,15 +41,23 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     /// <returns></returns>
     public List<List<Vector2>> GenerateLayout(Graph<MissionNodeData> mission)
     {
-        // Init vars
-        layout = new List<List<Vector2>>();
-        exploredMissionData = new List<MissionNodeData>();
-        exploredGridCoords = new List<Vector2>();
-        missionRooms = new List<Room>();
+        bool success = false;
+        int attempts = 0;
 
-        // Recursively generate rooms from the mission graph
-        GenerateRoomFromMissionNode((GraphNode<MissionNodeData>)mission.Nodes[0], Vector2.zero);
-        Debug.Log("All rooms should have been generated now");
+        while (!success)
+        {
+            attempts++;
+
+            // Init vars
+            layout = new List<List<Vector2>>();
+            exploredMissionData = new List<MissionNodeData>();
+            exploredGridCoords = new List<Vector2>();
+            missionRooms = new List<Room>();
+
+            // Recursively generate rooms from the mission graph
+            success = GenerateRoomFromMissionNode((GraphNode<MissionNodeData>)mission.Nodes[0], Vector2.zero);
+            Debug.Log("All rooms should have been generated now");
+        }
 
         // Generate random rooms around room sites to flesh out the voronoi
         CreateFleshRooms();
@@ -68,6 +76,8 @@ public class LayoutGeneratorRevamp : MonoBehaviour
             DebugRoom(room, 0);
         foreach (Room room in fleshRooms)
             DebugRoom(room, 1, false);
+
+        Debug.Log("Generation completed in " + attempts + " attempts.");
 
         return layout;
     }
@@ -197,7 +207,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
     /// </summary>
     /// <param name="startNode"></param>
     /// <param name="gridCoord"></param>
-    private void GenerateRoomFromMissionNode(GraphNode<MissionNodeData> startNode, Vector2 gridCoord)
+    private bool GenerateRoomFromMissionNode(GraphNode<MissionNodeData> startNode, Vector2 gridCoord)
     {
         // Extract mission and mark is as 'explored' to prevent infinite recursion.
         MissionNodeData data = startNode.Value;
@@ -219,8 +229,10 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         {
             if (!exploredMissionData.Contains(neighbor.Value))
             {
-                // Find an available coord for the neighbor and mark it as explored
+                // Find an available coord for the neighbor and mark it as explored, fail if none available
                 Vector2 neighborCoord = GetAvailableNeighborGridCoord(gridCoord);
+                if (neighborCoord == Vector2.zero)
+                    return false;
                 exploredGridCoords.Add(neighborCoord);
 
                 // Make note of this neighbors coordinate
@@ -231,8 +243,12 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         // Call this function for established neighbors
         foreach (KeyValuePair<GraphNode<MissionNodeData>, Vector2> entry in nextNodes)
         {
-            GenerateRoomFromMissionNode(entry.Key, entry.Value);
+            bool success = GenerateRoomFromMissionNode(entry.Key, entry.Value);
+            if (!success)
+                return false;
         }
+
+        return true;
     }
 
     /// <summary>
@@ -280,7 +296,7 @@ public class LayoutGeneratorRevamp : MonoBehaviour
         // Return (0,0) and error when no neighbors available
         if (availableCoords.Count == 0)
         {
-            Debug.LogError("No available neighbors for coord " + startCoord + "!");
+            Debug.LogWarning("No available neighbors for coord " + startCoord + "!");
             return Vector2.zero;
         }
 
