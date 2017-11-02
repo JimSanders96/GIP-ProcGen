@@ -195,27 +195,34 @@ public class MissionGraphGenerator : MonoBehaviour
 
     private bool ConnectNodeRandomly(GraphNode<MissionNodeData> node)
     {
-        int attempts = 0;
-        // Pick a random node that has no more than 3 neighbors
-        GraphNode<MissionNodeData> randomNode = (GraphNode<MissionNodeData>)missionGraph.Nodes[Random.Range(0, missionGraph.Nodes.Count)];
-        while (randomNode.Neighbors.Count >= 3 && attempts < 100)
-        {
-            randomNode = (GraphNode<MissionNodeData>)missionGraph.Nodes[Random.Range(0, missionGraph.Nodes.Count)];
-            attempts++;
-        }
+        // Get all nodes in the current graph that the input node can be connected to
+        List<GraphNode<MissionNodeData>> linkableGraphNodes = GetLinkableMissionGraphNodes();
+        linkableGraphNodes.Remove(node);
 
-        // Fail generation when max attempts reached
-        if (attempts == 100)
-        {
-            Debug.LogError("Max generation attempts reached!");
+        // Fail if no linkable graph nodes available
+        if (linkableGraphNodes.Count == 0)
             return false;
-        }
+
+        GraphNode<MissionNodeData> randomNode = linkableGraphNodes[Random.Range(0, linkableGraphNodes.Count)];
 
         // Connect the node
         missionGraph.AddUndirectedEdge(randomNode, node, GetRandomEdgeWeight());
         return true;
 
     }
+
+    private List<GraphNode<MissionNodeData>> GetLinkableMissionGraphNodes(int maxConnections = 3)
+    {
+        List<GraphNode<MissionNodeData>> nodes = new List<GraphNode<MissionNodeData>>();
+        foreach (GraphNode<MissionNodeData> node in missionGraph.Nodes)
+        {
+            if (node.Neighbors.Count < maxConnections)
+                nodes.Add(node);
+        }
+
+        return nodes;
+    }
+
 
     /// <summary>
     /// Return a random number between 1 and 2.
